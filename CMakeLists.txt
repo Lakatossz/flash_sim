@@ -5,5 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 include_directories(include)
 
-add_executable(flash_sim
-        source/main.cpp include/flash/flash.h)
+add_executable(
+        flash_sim
+        source/main.cpp
+        source/flash/flash.cpp)
