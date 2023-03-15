@@ -2,121 +2,169 @@
 
 Flash_Memory::Flash_Memory()
 {
-    memory.page_size = DEFAULT_PAGE_SIZE;
-    memory.block_size = DEFAULT_BLOCK_SIZE;
+    memory.metadata.page_size = DEFAULT_PAGE_SIZE;
+    memory.metadata.block_size = DEFAULT_BLOCK_SIZE;
 }
-Flash_Memory::Flash_Memory(int_8 page_size, int_8 block_size)
+Flash_Memory::Flash_Memory(int_8 page_size, int_8 block_size, mem_type memory_type)
 {
-    memory.page_size = page_size;
-    memory.block_size = block_size;
+    memory.metadata.page_size = page_size;
+    memory.metadata.block_size = block_size;
+    memory.metadata.memory_type = memory_type;
 }
 
-Flash_Memory::~Flash_Memory(){
+Flash_Memory::~Flash_Memory()
+{
 
 }
 
 bool Flash_Memory::Init()
 {
-    memory.mem_id = DEFAULT_MEMORY_ID;
-    memory.mem_size = memory.block_size * memory.page_size;
-    memory.mem_blocks = (block_struct *) malloc(sizeof(block_struct) * memory.block_size);
-    if (memory.mem_blocks == nullptr) {
+    memory.metadata.num_of_blocks =
+            (memory.metadata.num_of_pages * memory.metadata.page_size) / memory.metadata.block_size;
+
+    memory.blocks = (block *) malloc(sizeof(block) * memory.metadata.block_size);
+    if (memory.blocks == nullptr) {
         return false;
     }
-    for (int i = 0; i < memory.block_size; ++i) {
-        memory.mem_blocks->block_pages[i].page_data = (u_char *) malloc(sizeof(u_char) *memory.page_size);
-        if (memory.mem_blocks->block_pages[i].page_data == nullptr) {
+
+    for (int i = 0; i < memory.metadata.num_of_blocks; ++i) {
+        memory.blocks[i].pages = (page *) malloc(sizeof(page) * memory.metadata.page_size);
+        if (memory.blocks[i].pages == nullptr) {
             return false;
         }
+
+        for (int j = 0; j < memory.metadata.num_of_pages; ++j) {
+            memory.blocks[i].pages[j].data = (cell *) malloc(sizeof(cell) * memory.metadata.memory_type);
+            if (memory.blocks[i].pages[j].data == nullptr) {
+                return false;
+            }
+
+            /** TODO (memory.page_size / memory.memory_type) nebo (memory.page_size) */
+            for (int k = 0; k < memory.metadata.page_size / memory.metadata.memory_type; ++k) {
+                memory.blocks[i].pages[j].data[k].value = (bool *) malloc(sizeof(bool) * memory.metadata.memory_type);
+                if (memory.blocks[i].pages[j].data[k].value == nullptr) {
+                    return false;
+                }
+
+                memset(memory.blocks[i].pages[j].data[k].value, true, memory.metadata.memory_type);
+                memory.blocks[i].pages[j].data[k].id = k;
+            }
+            memory.blocks[i].pages[j].spare.metadata.id = j;
+        }
+        memory.blocks[i].metadata.id = i;
     }
+    memory.metadata.mem_size = memory.metadata.num_of_blocks * memory.metadata.page_size * memory.metadata.num_of_pages;
+    uuid_generate_random(memory.metadata.id);
 
     return true;
 }
 
-string Flash_Memory::Read_ID() {
-    return std::string();
-}
-
-string Flash_Memory::Read_Parameter_Page_Definition() {
-    return std::string();
-}
-
-string Flash_Memory::Read_Uniquie_ID() {
-    return std::string();
-}
-
-void Flash_Memory::Block_Erase(int_32 block_address) {
+void Flash_Memory::Read_Page(int_32 row_addr)
+{
 
 }
 
-string Flash_Memory::Read_Status() {
-    return std::string();
+string Flash_Memory::Read_Cache()
+{
+    return " ";
 }
 
-string Flash_Memory::Read_Status_Enhanced() {
-    return std::string();
+string Flash_Memory::Read_Status()
+{
+    return " ";
 }
 
-string Flash_Memory::Status_Read() {
-    return std::string();
+uuid_t* Flash_Memory::Read_ID()
+{
+    return &memory.metadata.id;
 }
 
-string Flash_Memory::Read(int_32 row_addr) {
-    return std::string();
-}
-
-void Flash_Memory::Read_Cache() {
-
-}
-
-void Flash_Memory::Page_Program(int_32 col_addr) {
+void Flash_Memory::Program_Page(int_32 col_addr)
+{
 
 }
 
-void Flash_Memory::Page_Cache_Program() {
+void Flash_Memory::Program_Page_Cache(string data)
+{
 
 }
 
-void Flash_Memory::CopyBack(int_32 old_row_addr, int_32 new_row_addr) {
+void Flash_Memory::Program_Data_Move(int_32 old_row_addr, int_32 new_row_addr)
+{
 
 }
 
-void Flash_Memory::Small_Data_Move() {
+/*void Flash_Memory::Change_Read_Column(int_32 col_addr)
+{
 
 }
 
-void Flash_Memory::Change_Read_Column(int_32 col_addr) {
+void Flash_Memory::Change_Write_Column(int_32 row_addr)
+{
 
 }
 
-void Flash_Memory::Change_Read_Column_Enhanced(int_32 lun_addr, int_32 plane_addr, int_32 col_addr) {
+void Flash_Memory::Change_Row_Address(int_32 row_addr, int_32 col_addr)
+{
+
+}*/
+
+void Flash_Memory::Block_Erase(int_32 block_address)
+{
+    if (block_address >= memory.metadata.num_of_blocks) {
+        cout << "Adresa bloku je příliš velká.\n";
+        return;
+    } else if (memory.blocks[block_address].metadata.bad) {
+        cout << "Blok je již požkozený.\n";
+        return;
+    } else if (memory.blocks[block_address].metadata.erase_number == MAX_ERASE_NUMBER) {
+        memory.blocks[block_address].metadata.bad = true;
+        cout << "Blok již nejde vymazat.\n";
+        return;
+    }
+
+    for (int i = 0; i < memory.metadata.num_of_pages; ++i) {
+        for (int j = 0; j < memory.metadata.page_size; ++j) {
+            memset(memory.blocks[block_address].pages[i].data[j].value, true, memory.metadata.memory_type);
+        }
+        memset(memory.blocks[block_address].pages[i].spare.ecc, 1, memory.metadata.ecc_size);
+        memory.blocks[block_address].pages[i].spare.metadata.data_age = 0;
+        memory.blocks[block_address].pages[i].spare.metadata.erase_number++;
+        memory.blocks[block_address].pages[i].spare.metadata.wear_level++;
+        memory.blocks[block_address].pages[i].spare.metadata.erased = true;
+        memory.blocks[block_address].pages[i].spare.metadata.valid = false;
+    }
+
+    memory.blocks[block_address].metadata.erase_number++;
+    memory.blocks[block_address].metadata.wear_level++;
+    memory.blocks[block_address].metadata.erased = true;
+    memory.blocks[block_address].metadata.valid = false;
+}
+
+void Flash_Memory::Reset()
+{
+    for (int i = 0; i < memory.metadata.num_of_blocks; ++i) {
+        for (int j = 0; j < memory.metadata.num_of_pages; ++j) {
+            /** TODO (memory.page_size / memory.memory_type) nebo (memory.page_size) */
+            for (int k = 0; k < memory.metadata.page_size / memory.metadata.memory_type; ++k) {
+                memset(memory.blocks->pages[j].data[k].value, true, memory.metadata.memory_type);
+            }
+            memset(memory.blocks->pages[j].spare.ecc, 0, memory.metadata.ecc_size);
+            memory.blocks[i].pages[j].spare.metadata.valid = false;
+            memory.blocks[i].pages[j].spare.metadata.erased = true;
+            memory.blocks[i].pages[j].spare.metadata.data_age = 0;
+        }
+        memory.blocks[i].metadata.erased = true;
+        memory.blocks[i].metadata.valid = false;
+    }
+}
+
+void Flash_Memory::Random_Data_Read()
+{
 
 }
 
-void Flash_Memory::Change_Write_Column(int_32 row_addr) {
-
-}
-
-void Flash_Memory::Change_Row_Address(int_32 row_addr, int_32 col_addr) {
-
-}
-
-void Flash_Memory::Calibration_Long() {
-
-}
-
-void Flash_Memory::Calibration_Short() {
-
-}
-
-void Flash_Memory::Set_Features(int_8 feature) {
-
-}
-
-string Flash_Memory::Get_Features(int_8 feature) {
-    return std::string();
-}
-
-void Flash_Memory::Feature_Parameter(int_8 param) {
+void Flash_Memory::Random_Data_Input()
+{
 
 }
