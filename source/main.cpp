@@ -17,11 +17,9 @@
 #define COM_UNKNOWN "Neznamy prikaz!\n"
 
 #define COM_READ_PAGE "READ_PAGE"
-#define COM_READ_CACHE "READ_CACHE"
 #define COM_READ_STATUS "READ_STATUS"
 #define COM_READ_ID "READ_ID"
 #define COM_PROGRAM_PAGE "PROGRAM_PAGE"
-#define COM_PROGRAM_PAGE_CACHE "PROGRAM_PAGE_CACHE"
 #define COM_PROGRAM_DATA_MOVE "PROGRAM_DATA_MOVE"
 #define COM_BLOCK_ERASE "BLOCK_ERASE"
 #define COM_RESET "RESET"
@@ -32,26 +30,38 @@ using namespace std;
 
 int main(int argc, char **argv) {
 
-    fstream input_file, output_file;
+    istream *input = &cin;
+    ostream *output = &cout;
+    ifstream input_file;
+    ofstream output_file;
     string command;
 
-    Flash_Memory *flashMemory = new Flash_Memory();
+    int_16 page_size = DEFAULT_PAGE_SIZE;
+
+    auto *flashMemory = new Flash_Memory();
 
     if (argc > 1) {
         for (int i = 0; i < (argc - 1); ++i) {
             if (strcmp(argv[i], PARAM_FILE_IN) == 0) {
-                input_file.open(argv[i + 1], ios::in);
-                if (input_file.is_open()) {
-                    cout << "Otevrel jsem input" << endl;
-                }
+                input_file = ifstream(argv[i + 1]);
+                if (input_file) {
+                    input = &input_file;
+                    cout << "Otevrel jsem input soubor." << endl;
+                } else
+                    cout << "Nepodarilo se otevrit soubor: " << argv[i + 1] << endl;
+//                input_file.open(argv[i + 1], ios::in);
             } else if (strcmp(argv[i], PARAM_FILE_OUT) == 0) {
-                output_file.open(argv[i + 1], ios::out);
-                if (output_file.is_open()) {
-                    cout << "Otevrel jsem output" << endl;
-                }
+                output_file = ofstream(argv[i + 1]);
+                if (output_file) {
+                    output = &output_file;
+                    cout << "Otevrel jsem output soubor." << endl;
+                } else
+                    cout << "Nepodarilo se otevrit soubor: " << argv[i + 1] << endl;
+//                output_file.open(argv[i + 1], ios::out);
             } else if (strcmp(argv[i], PARAM_BLOCK_SIZE) == 0) {
 
             } else if (strcmp(argv[i], PARAM_PAGE_SIZE) == 0) {
+
 
             } else if (strcmp(argv[i], PARAM_READ_PAGE_TIME) == 0) {
 
@@ -62,53 +72,85 @@ int main(int argc, char **argv) {
             }
         }
     } else {
-        ((output_file.is_open()) ? output_file : cout) << "Vlozili jste malo parametru - program nemuze spravne bezet" << endl;
+        *output << "Vlozili jste malo parametru - program nemuze spravne bezet" << endl;
     }
 
     flashMemory->Init();
 
+
     while (true) {
-        ((input_file.is_open()) ? input_file : cin) >> command;
+        *input >> command;
 
         cout << command << endl;
 
         if (command == string(COM_STOP)) {
             break;
         } else if (command == string(COM_READ_PAGE)) {
-            ((output_file.is_open()) ? output_file : cout) << "Obsah stránky byl načten do cache.\n";
-        } else if (command == string(COM_READ_CACHE)) {
-            ((output_file.is_open()) ? output_file : cout) << "Obsah cache byl přečten.\n";
+
+            int_16 address;
+            *input >> address;
+            u_char *data = flashMemory->Read_Page(address);
+            if (!data) {
+                *output << "Nepodařilo se načíst stránku.\n";
+            }
+
+            *output << "Obsah stránky byl načten.\n";
         } else if (command == string(COM_READ_STATUS)) {
-            ((output_file.is_open()) ? output_file : cout) << "Status paměti byl přečten.\n";
+            u_char *data = flashMemory->Read_Status();
+            if (!data) {
+                *output << "Nepodařilo se načíst status.\n";
+            }
+            *output << "Status paměti byl přečten.\n";
         } else if (command == string(COM_READ_ID)) {
-            ((output_file.is_open()) ? output_file : cout) << "ID zařízení bylo přečteno.\n";
+            flashMemory->Read_ID();
+            *output << "ID zařízení bylo přečteno.\n";
         } else if (command == string(COM_PROGRAM_PAGE)) {
-            ((output_file.is_open()) ? output_file : cout) << "Stránka byla naprogramována.\n";
-        } else if (command == string(COM_PROGRAM_PAGE_CACHE)) {
-            ((output_file.is_open()) ? output_file : cout) << "Cache byla naprogramována.\n";
+            int_16 address;
+            *input >> address;
+            auto *data = (u_char *) malloc(sizeof(u_char) * page_size);
+            if (!data) {
+                *output << "Není dostatek paměti.\n";
+            }
+            *input >> data;
+            flashMemory->Program_Page(address, data);
+            *output << "Stránka byla naprogramována.\n";
         } else if (command == string(COM_PROGRAM_DATA_MOVE)) {
-            ((output_file.is_open()) ? output_file : cout) << "Obsah stránky by naprogramován na jiné místo.\n";
+            *output << "Obsah stránky by naprogramován na jiné místo.\n";
         } else if (command == string(COM_BLOCK_ERASE)) {
-            ((output_file.is_open()) ? output_file : cout) << "Obsah bloku byl vymazán.\n";
+            int_16 address;
+            *input >> address;
+            flashMemory->Block_Erase(address);
+            *output << "Obsah bloku byl vymazán.\n";
         } else if (command == string(COM_RESET)) {
-            ((output_file.is_open()) ? output_file : cout) << "Paměť byla vyresetována.\n";
+            flashMemory->Reset();
+            *output << "Paměť byla vyresetována.\n";
         } else if (command == string(COM_RANDOM_DATA_READ)) {
-            ((output_file.is_open()) ? output_file : cout) << "Obsah náhodné stránky byl načten do cache.\n";
+            u_char *data = flashMemory->Random_Data_Read();
+            if (!data) {
+                *output << "Nepodařilo se načíst stránku.\n";
+            }
+            *output << "Obsah náhodné stránky byl načten do cache.\n";
         } else if (command == string(COM_RANDOM_DATA_INPUT)) {
-            ((output_file.is_open()) ? output_file : cout) << "Stránka byla naprogramována náhodným obsahem.\n";
+            auto *data = (u_char *) malloc(sizeof(u_char) * page_size);
+            if (!data) {
+                *output << "Není dostatek paměti.\n";
+            }
+            *input >> data;
+            flashMemory->Random_Data_Input( data);
+            *output << "Stránka byla naprogramována náhodným obsahem.\n";
         } else {
-            ((output_file.is_open()) ? output_file : cout) << COM_UNKNOWN;
+            *output << COM_UNKNOWN;
         }
     }
 
-    ((output_file.is_open()) ? output_file : cout) << "Koncim\n";
+    *output << "Koncim\n";
 
-    if (input_file.is_open()) {
+    if (input_file && input_file.is_open()) {
         cout << "Zaviram input" << endl;
         input_file.close();
     }
 
-    if (output_file.is_open()) {
+    if (output_file && output_file.is_open()) {
         cout << "Zaviram output" << endl;
         output_file.close();
     }
