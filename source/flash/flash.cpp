@@ -56,8 +56,7 @@ u_char* Flash_Memory::Read_Page(int_16 addr)
         return nullptr;
     }
 
-    int_32 pointer = addr * m.md.num_of_blocks * (m.md.block_size + m.md.md_b_size)
-                            + m.md.page_size * (m.md.page_size + m.md.md_p_size);
+    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
@@ -107,8 +106,7 @@ void Flash_Memory::Program_Page(int_16 addr, u_char *data)
         return;
     }
 
-    int_32 pointer = addr * m.md.num_of_blocks * (m.md.block_size + m.md.md_b_size)
-                     + m.md.page_size * (m.md.page_size + m.md.md_p_size);
+    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
@@ -126,30 +124,32 @@ void Flash_Memory::Program_Data_Move(int_32 old_row_addr, int_32 new_row_addr)
 
 }
 
-void Flash_Memory::Block_Erase(int_8 block_address)
+void increase(u_char *counter, int size) {
+    
+}
+
+void Flash_Memory::Block_Erase(int_8 addr)
 {
     /** Zkontroluju adresu bloku. */
-    if (block_address >= m.md.num_of_blocks) {
+    if (addr >= m.md.num_of_blocks) {
         cout << "Adresa bloku je příliš velká.\n";
         m.md.status = m.md.status | (1 << 5);
         return;
         /** Zkontroluju, jestli je možné stránku ještě smazat. */
         /** cislo bloku + cislo stranky + 5. pozice znaku */
-    } else if (m.data[block_address * m.md.num_of_blocks
-                + m.md.page_size * (m.md.page_size + m.md.md_p_size) + 1] >> 5 == 1) {
+    } else if (m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + 1] >> 5 == 1) {
         cout << "Blok je již požkozený.\n";
         m.md.status = m.md.status | (1 << 5);
         return;
     }
 
-    /** Smažu stránku. */
-    memset(&m.data[block_address * m.md.num_of_blocks + (block_address & (uint8_t) ~0L) + m.md.md_b_size],
-           0L, m.md.page_size);
+    /** Smažu blok. */
+    memset(&m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)],0L, m.md.page_size);
 
-    if (m.data[(block_address >> 8) * m.md.num_of_blocks + (block_address & (uint8_t) ~0L) + 3] == 255) {
-        m.data[(block_address >> 8) * m.md.num_of_blocks + (block_address & (uint8_t) ~0L) + 2]++;
+    if (m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + 3] == 255) {
+        m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + 2]++;
     } else {
-        m.data[(block_address >> 8) * m.md.num_of_blocks + (block_address & (uint8_t) ~0L) + 3]++;
+        m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + 3]++;
     }
 }
 
