@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cstring>
+#include <string.h>
+#include <cstdlib>
 #include "../include/flash/flash.h"
 
 /**
@@ -10,7 +12,7 @@
 #define PARAM_BLOCK_SIZE "-block_size"
 #define PARAM_PAGE_SIZE "-page_size"
 #define PARAM_READ_PAGE_TIME "-read_page_time"
-#define PARAM_READ_PAGE_PROG "-read_page_prog"
+#define PARAM_PAGE_PROG_TIME "-page_prog_time"
 #define PARAM_ERASE_TIME "-erase_time"
 
 #define COM_STOP "STOP"
@@ -19,7 +21,7 @@
 #define COM_READ_PAGE "READ_PAGE"
 #define COM_READ_STATUS "READ_STATUS"
 #define COM_READ_ID "READ_ID"
-#define COM_PROGRAM_PAGE "PROGRAM_PAGE"
+#define COM_PROGRAM_PAGE_TIME "PROGRAM_PAGE_TIME"
 #define COM_PROGRAM_DATA_MOVE "PROGRAM_DATA_MOVE"
 #define COM_BLOCK_ERASE "BLOCK_ERASE"
 #define COM_RESET "RESET"
@@ -37,11 +39,15 @@ int main(int argc, char **argv) {
     string command;
 
     int_16 page_size = DEFAULT_PAGE_SIZE;
+    int_16 block_size = DEFAULT_BLOCK_SIZE;
+    int_16 read_page_time;
+    int_16 page_prog_time;
+    int_16 erase_time;
 
     auto *flashMemory = new Flash_Memory();
 
     if (argc > 1) {
-        for (int i = 0; i < (argc - 1); ++i) {
+        for (int i = 0; i < (argc - 1); i += 2) {
             if (strcmp(argv[i], PARAM_FILE_IN) == 0) {
                 input_file = ifstream(argv[i + 1]);
                 if (input_file) {
@@ -49,7 +55,6 @@ int main(int argc, char **argv) {
                     cout << "Otevrel jsem input soubor." << endl;
                 } else
                     cout << "Nepodarilo se otevrit soubor: " << argv[i + 1] << endl;
-//                input_file.open(argv[i + 1], ios::in);
             } else if (strcmp(argv[i], PARAM_FILE_OUT) == 0) {
                 output_file = ofstream(argv[i + 1]);
                 if (output_file) {
@@ -57,22 +62,47 @@ int main(int argc, char **argv) {
                     cout << "Otevrel jsem output soubor." << endl;
                 } else
                     cout << "Nepodarilo se otevrit soubor: " << argv[i + 1] << endl;
-//                output_file.open(argv[i + 1], ios::out);
             } else if (strcmp(argv[i], PARAM_BLOCK_SIZE) == 0) {
-
+                try {
+                    block_size = stoi(argv[i + 1]);
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
+                }
             } else if (strcmp(argv[i], PARAM_PAGE_SIZE) == 0) {
-
-
+                try {
+                    page_size = stoi(argv[i + 1]);
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
+                }
             } else if (strcmp(argv[i], PARAM_READ_PAGE_TIME) == 0) {
+                try {
+                    read_page_time = stoi(argv[i + 1]);
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
+                }
 
-            } else if (strcmp(argv[i], PARAM_READ_PAGE_PROG) == 0) {
-
+            } else if (strcmp(argv[i], PARAM_PAGE_PROG_TIME) == 0) {
+                try {
+                    page_prog_time = stoi(argv[i + 1]);
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
+                }
             } else if (strcmp(argv[i], PARAM_ERASE_TIME) == 0) {
-
+                try {
+                    erase_time = stoi(argv[i + 1]);
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
+                }
             }
         }
     } else {
         *output << "Vlozili jste malo parametru - program nemuze spravne bezet" << endl;
+        return EXIT_FAILURE;
     }
 
     flashMemory->Init();
@@ -96,15 +126,12 @@ int main(int argc, char **argv) {
 
             *output << "Obsah stránky byl načten.\n";
         } else if (command == string(COM_READ_STATUS)) {
-            u_char *data = flashMemory->Read_Status();
-            if (!data) {
-                *output << "Nepodařilo se načíst status.\n";
-            }
+            u_char data = flashMemory->Read_Status();
             *output << "Status paměti byl přečten.\n";
         } else if (command == string(COM_READ_ID)) {
             flashMemory->Read_ID();
             *output << "ID zařízení bylo přečteno.\n";
-        } else if (command == string(COM_PROGRAM_PAGE)) {
+        } else if (command == string(COM_PROGRAM_PAGE_TIME)) {
             int_16 address;
             *input >> address;
             auto *data = (u_char *) malloc(sizeof(u_char) * page_size);
