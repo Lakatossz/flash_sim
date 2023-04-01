@@ -13,18 +13,8 @@ using namespace std;
 
 #define DEFAULT_PAGE_SIZE 512
 #define DEFAULT_BLOCK_SIZE 16
-#define DEFAULT_MEMORY_ID 0
 
 #define MAX_ERASE_NUMBER 100000
-
-/**
- * Definice výčtového typu možných typů velikosti stránek.
- */
-typedef enum page_size_struct {
-    size_256 = 256,
-    size_512 = 512,
-    size_2048 = 2048
-} page_size;
 
 /**
  * Definice výštového typu představující typ buňky paměti.
@@ -37,68 +27,14 @@ typedef enum mem_type_enum {
     QLC = 4,
 } mem_type;
 
-typedef enum metadata {
+typedef enum Page_Metadata {
     VALID = 0,
     ECC = 1,
     WEAR = 16,
-}metadata;
-
-/**
- * Definice struktury buňky paměti.
- */
-typedef struct cell_struct {
-    int_32 id = 0; /** Identifikátor buňky. */
-    bool *value = nullptr; /** Hodnota uložená v buňce */
-} cell;
-
-/**
- * Definice struktury metadat stránky.
- */
-typedef struct page_metadata_struct {
-    int_32 id = 0; /** Identifikátor stránky. */
-    int_32 erase_number = 0; /** Počet smazání stránky. */
-    int_32 data_age = 0; /** Stáří dat. */
-    bool valid = false; /** Příznak validních dat. */
-    bool erased = false; /** Příznak čistoty stránky. */
-    bool bad = false; /** Příznak použitelnosti. */
-    int_32 wear_level = 0; /** Použitelnost. */
-} page_metadata;
-
-typedef struct page_spare_struct {
-    page_metadata metadata = { 0 }; /** Metadata stránky.  */
-    u_char *ecc = nullptr; /** Kontrolni kód stránky. */
-} page_spare;
-
-/**
- * Definice struktury stránky.
- */
-typedef struct page_struct {
-    cell_struct *data = nullptr; /** Obsah stránky. */
-    page_spare spare = { 0 };
-} page;
-
-/**
- * Definice struktury metadat bloku.
- */
-typedef struct block_metadata_struct {
-    int_32 id = 0; /** Identifikátor bloku. */
-    int_32 erase_number = 0; /** Pocet smazani bloku. */
-    bool valid = false; /** Příznak validních dat. */
-    bool erased = false; /** Příznak čistoty bloku. */
-    bool bad = false; /** Příznak použitelnosti. */
-    int_32 wear_level = 0; /** Použitelnost. */
-} block_metadata;
-
-/**
- * Definice struktury bloku.
- */
-typedef struct block_struct {
-    page_struct *pages = nullptr; /** Obsah bloku. */
-    block_metadata metadata = { 0 }; /** Metadata bloku. */
-} block;
+} Page_Metadata;
 
 typedef struct nand_metadata_struct {
-    uuid_t id; /** Identifikátor paměti. */
+    uuid_t id{}; /** Identifikátor paměti. */
     int_32 page_size = 0; /** Velikost stránky. */
     int_8 num_of_pages = 0; /** Pocet stránek. */
     int_32 block_size = 0; /** Velikost bloku. */
@@ -126,7 +62,7 @@ class Flash_Memory {
 
 private:
 
-    nand_memory m = { 0 };
+    nand_memory m = { nullptr };
 
 public:
 
@@ -146,7 +82,7 @@ public:
     /**
      * Vrátí základní informace o statusu paměti a operaci.
      */
-    u_char Read_Status();
+    u_char Read_Status() const;
 
     /**
      * Vráti UUID (128b) zařízení.

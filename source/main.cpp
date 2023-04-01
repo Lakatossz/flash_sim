@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cstring>
-#include <string.h>
 #include <cstdlib>
 #include "../include/flash/flash.h"
 

@@ -10,14 +10,11 @@ Flash_Memory::Flash_Memory(int_8 page_size, int_8 block_size, mem_type memory_ty
     m.md.page_size = page_size;
     m.md.block_size = block_size;
     m.md.memory_type = memory_type;
-    m.md.md_p_size = 2;
-    m.md.md_b_size = 2;
+    m.md.md_p_size = 8;
+    m.md.md_b_size = 8;
 }
 
-Flash_Memory::~Flash_Memory()
-{
-
-}
+Flash_Memory::~Flash_Memory() = default;
 
 bool Flash_Memory::Init()
 {
@@ -77,7 +74,7 @@ u_char* Flash_Memory::Read_Page(int_16 addr)
     return buf;
 }
 
-u_char Flash_Memory::Read_Status()
+u_char Flash_Memory::Read_Status() const
 {
     return m.md.status;
 }
@@ -124,9 +121,23 @@ void Flash_Memory::Program_Data_Move(int_32 old_row_addr, int_32 new_row_addr)
 
 }
 
-void increase(u_char *counter, int size) {
-    
+/**
+ * Funkce pro inkrementaci pole predstavujici pocitadlo.
+ * @param counter Pole u_char - pocitadlo.
+ * @param size Pocet bytu pole.
+ */
+void increase_counter(u_char *counter, int size) {
+    for (int i = size - 1; i >= 0; -i) {
+        if (counter[i] < (u_char) 1L) {
+            counter[i]++;
+            return;
+        }
+    }
 }
+
+//for (int i = 0; i < numBytes; i++) {
+//intValue |= ((int)charArray[i] << ((numBytes - 1 - i) * 8));
+//}
 
 void Flash_Memory::Block_Erase(int_8 addr)
 {
@@ -145,12 +156,7 @@ void Flash_Memory::Block_Erase(int_8 addr)
 
     /** Smažu blok. */
     memset(&m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)],0L, m.md.page_size);
-
-    if (m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + 3] == 255) {
-        m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + 2]++;
-    } else {
-        m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + 3]++;
-    }
+    increase_counter(&m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size) + WEAR], 4);
 }
 
 void Flash_Memory::Reset()
@@ -161,7 +167,7 @@ void Flash_Memory::Reset()
 
 u_char* Flash_Memory::Random_Data_Read()
 {
-
+    return nullptr;
 }
 
 void Flash_Memory::Random_Data_Input(u_char *data)
