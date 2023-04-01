@@ -11,8 +11,17 @@ typedef u_int8_t int_8;
 typedef u_int16_t int_16;
 using namespace std;
 
+#define MEM_TYPE_SLC "slc"
+#define MEM_TYPE_MLC "mlc"
+#define MEM_TYPE_TLC "tlc"
+#define MEM_TYPE_QLC "qlc"
+
 #define DEFAULT_PAGE_SIZE 512
 #define DEFAULT_BLOCK_SIZE 16
+#define DEFAULT_READ_PAGE_TIME 10
+#define DEFAULT_PAGE_PROG_TIME 15
+#define DEFAULT_ERASE_TIME 30
+#define DEFAULT_MEM_TYPE SLC
 
 #define MAX_ERASE_NUMBER 100000
 
@@ -35,17 +44,20 @@ typedef enum Page_Metadata {
 
 typedef struct nand_metadata_struct {
     uuid_t id{}; /** Identifikátor paměti. */
+    int_32 read_page_time = DEFAULT_READ_PAGE_TIME;
+    int_32 page_prog_time = DEFAULT_PAGE_PROG_TIME;
+    int_32 erase_time = DEFAULT_ERASE_TIME;
     int_32 page_size = 0; /** Velikost stránky. */
-    int_8 num_of_pages = 0; /** Pocet stránek. */
+    int_32 num_of_pages = 0; /** Pocet stránek. */
     int_32 block_size = 0; /** Velikost bloku. */
-    int_8 num_of_blocks = 0; /** Počet bloků. */
+    int_32 num_of_blocks = 0; /** Počet bloků. */
     int_32 mem_size = 0; /** Veliskot paměti. */
     int_32 true_mem_size = 0; /** Pocet bitu pameti. */
-    int_8 ecc_size = 0; /** Počet bitů ECC kódu. */
-    int_8 md_p_size = 0; /** Celkovy pocet metadat jedne stranky. */
-    int_8 md_b_size = 0; /** Celkovy pocet metadat jednoho bloku. */
+    int_32 ecc_size = 0; /** Počet bitů ECC kódu. */
+    int_32 md_p_size = 0; /** Celkovy pocet metadat jedne stranky. */
+    int_32 md_b_size = 0; /** Celkovy pocet metadat jednoho bloku. */
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
-    mem_type memory_type = SLC; /** Typ paměti - určuje velikost buňky. */
+    mem_type memory_type = DEFAULT_MEM_TYPE; /** Typ paměti - určuje velikost buňky. */
 } nand_metadata;
 
 /**
@@ -68,7 +80,8 @@ public:
 
     Flash_Memory();
 
-    Flash_Memory(int_8 page_size, int_8 block_size, mem_type memory_type);
+    Flash_Memory(int_32 page_size, int_32 block_size, mem_type memory_type,
+                 int_32 read_page_time, int_32 page_prog_time, int_32 erase_time);
 
     ~Flash_Memory();
 

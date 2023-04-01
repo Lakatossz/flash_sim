@@ -5,11 +5,15 @@ Flash_Memory::Flash_Memory()
     m.md.page_size = DEFAULT_PAGE_SIZE;
     m.md.block_size = DEFAULT_BLOCK_SIZE;
 }
-Flash_Memory::Flash_Memory(int_8 page_size, int_8 block_size, mem_type memory_type)
+Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, mem_type memory_type,
+                           int_32 read_page_time, int_32 page_prog_time, int_32 erase_time)
 {
     m.md.page_size = page_size;
     m.md.block_size = block_size;
     m.md.memory_type = memory_type;
+    m.md.read_page_time = read_page_time;
+    m.md.page_prog_time = page_prog_time;
+    m.md.erase_time = erase_time;
     m.md.md_p_size = 8;
     m.md.md_b_size = 8;
 }

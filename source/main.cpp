@@ -13,6 +13,7 @@
 #define PARAM_READ_PAGE_TIME "-read_page_time"
 #define PARAM_PAGE_PROG_TIME "-page_prog_time"
 #define PARAM_ERASE_TIME "-erase_time"
+#define PARAM_MEM_TYPE "-mem_type"
 
 #define COM_STOP "STOP"
 #define COM_UNKNOWN "Neznamy prikaz!\n"
@@ -37,11 +38,12 @@ int main(int argc, char **argv) {
     ofstream output_file;
     string command;
 
-    int_16 page_size = DEFAULT_PAGE_SIZE;
-    int_16 block_size = DEFAULT_BLOCK_SIZE;
-    int_16 read_page_time;
-    int_16 page_prog_time;
-    int_16 erase_time;
+    int_32 page_size = DEFAULT_PAGE_SIZE;
+    int_32 block_size = DEFAULT_BLOCK_SIZE;
+    int_32 read_page_time = DEFAULT_READ_PAGE_TIME;
+    int_32 page_prog_time = DEFAULT_PAGE_PROG_TIME;
+    int_32 erase_time = DEFAULT_ERASE_TIME;
+    mem_type type = DEFAULT_MEM_TYPE;
 
     auto *flashMemory = new Flash_Memory();
 
@@ -97,7 +99,23 @@ int main(int argc, char **argv) {
                     cout << "Parametr musi byt cislo!\n";
                     return EXIT_FAILURE;
                 }
+            } else if (strcmp(argv[i], PARAM_MEM_TYPE) == 0) {
+                if (strcmp(argv[i + 1], MEM_TYPE_SLC) == 0) {
+                    type = SLC;
+                } else if (strcmp(argv[i + 1], MEM_TYPE_MLC) == 0) {
+                    type = MLC;
+                } else if (strcmp(argv[i + 1], MEM_TYPE_TLC) == 0) {
+                    type = TLC;
+                } else if (strcmp(argv[i + 1], MEM_TYPE_QLC) == 0) {
+                    type = QLC;
+                } else {
+                    cout << "Spatny parametr typu pameti. Povolene jsou (slc, mlc, tlc, qlc)!\n";
+                    return EXIT_FAILURE;
+                }
             }
+
+            flashMemory = new Flash_Memory(page_size, block_size,
+                                           type, read_page_time, page_prog_time, erase_time);
         }
     } else {
         *output << "Vlozili jste malo parametru - program nemuze spravne bezet" << endl;
@@ -105,7 +123,6 @@ int main(int argc, char **argv) {
     }
 
     flashMemory->Init();
-
 
     while (true) {
         *input >> command;
