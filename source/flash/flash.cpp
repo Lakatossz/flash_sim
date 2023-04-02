@@ -1,5 +1,33 @@
 #include "flash/flash.h"
 
+/**
+ * Funkce pro inkrementaci pole predstavujici pocitadlo.
+ * @param counter Pole u_char - pocitadlo.
+ * @param size Pocet bytu pole.
+ */
+void increase_counter(u_char *counter, int size) {
+    for (int i = size - 1; i >= 0; -i) {
+        if (counter[i] < (u_char) 1L) {
+            counter[i]++;
+            return;
+        }
+    }
+}
+
+/**
+ *
+ * @param time_type
+ */
+void increase_time(Time_Type type) {
+    if (type == READ_PAGE_TIME) {
+
+    } else if (type == PAGE_PROG_TIME) {
+
+    } else if (type == ERASE_TIME) {
+
+    }
+}
+
 Flash_Memory::Flash_Memory()
 {
     m.md.page_size = DEFAULT_PAGE_SIZE;
@@ -47,6 +75,7 @@ u_char* Flash_Memory::Read_Page(int_16 addr)
 {
     /** Zkontroluju adresu bloku. */
     if ((addr >> 8) >= m.md.num_of_blocks) {
+        cout << (addr >> 8) << endl;
         cout << "Adresa bloku je příliš velká.\n";
         m.md.status = m.md.status | (1 << 5);
         return nullptr;
@@ -56,6 +85,9 @@ u_char* Flash_Memory::Read_Page(int_16 addr)
         m.md.status = m.md.status | (1 << 5);
         return nullptr;
     }
+
+    m.md.mem_time += m.md.read_page_time;
+    increase_time(READ_PAGE_TIME);
 
     int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
@@ -107,6 +139,9 @@ void Flash_Memory::Program_Page(int_16 addr, string data)
         return;
     }
 
+    m.md.mem_time += m.md.page_prog_time;
+    increase_time(PAGE_PROG_TIME);
+
     int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
@@ -123,20 +158,6 @@ void Flash_Memory::Program_Page(int_16 addr, string data)
 void Flash_Memory::Program_Data_Move(int_32 old_row_addr, int_32 new_row_addr)
 {
 
-}
-
-/**
- * Funkce pro inkrementaci pole predstavujici pocitadlo.
- * @param counter Pole u_char - pocitadlo.
- * @param size Pocet bytu pole.
- */
-void increase_counter(u_char *counter, int size) {
-    for (int i = size - 1; i >= 0; -i) {
-        if (counter[i] < (u_char) 1L) {
-            counter[i]++;
-            return;
-        }
-    }
 }
 
 //for (int i = 0; i < numBytes; i++) {
@@ -157,6 +178,9 @@ void Flash_Memory::Block_Erase(int_8 addr)
         m.md.status = m.md.status | (1 << 5);
         return;
     }
+
+    m.md.mem_time += m.md.erase_time;
+    increase_time(ERASE_TIME);
 
     /** Smažu blok. */
     memset(&m.data[addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)],0L, m.md.page_size);

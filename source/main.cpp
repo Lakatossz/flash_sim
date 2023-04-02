@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
+#include <sstream>
 #include "../include/flash/flash.h"
 
 /**
@@ -21,24 +22,24 @@
 #define MAX_PAGE_PROG_TIME 1000
 #define MAX_ERASE_TIME 1000
 
-#define MIN_BLOCK_SIZE 10000
-#define MIN_PAGE_SIZE 1024
-#define MIN_READ_PAGE_TIME 1000
-#define MIN_PAGE_PROG_TIME 1000
-#define MIN_ERASE_TIME 1000
+#define MIN_BLOCK_SIZE 1
+#define MIN_PAGE_SIZE 1
+#define MIN_READ_PAGE_TIME 1
+#define MIN_PAGE_PROG_TIME 1
+#define MIN_ERASE_TIME 1
 
-#define COM_STOP "STOP"
 #define COM_UNKNOWN "Neznamy prikaz!\n"
 
-#define COM_READ_PAGE "READ_PAGE"
-#define COM_READ_STATUS "READ_STATUS"
-#define COM_READ_ID "READ_ID"
-#define COM_PROGRAM_PAGE_TIME "PROGRAM_PAGE_TIME"
-#define COM_PROGRAM_DATA_MOVE "PROGRAM_DATA_MOVE"
-#define COM_BLOCK_ERASE "BLOCK_ERASE"
-#define COM_RESET "RESET"
-#define COM_RANDOM_DATA_READ "RANDOM_DATA_READ"
-#define COM_RANDOM_DATA_INPUT "RANDOM_DATA_INPUT"
+#define COM_READ_PAGE "0x03"
+#define COM_READ_STATUS "0x04"
+#define COM_READ_ID "0x05"
+#define COM_PROGRAM_PAGE "0x06"
+#define COM_PROGRAM_DATA_MOVE "0x07"
+#define COM_BLOCK_ERASE "0x08"
+#define COM_RESET "0x09"
+#define COM_RANDOM_DATA_READ "0x0a"
+#define COM_RANDOM_DATA_INPUT "0x0b"
+#define COM_STOP "STOP"
 
 using namespace std;
 
@@ -52,7 +53,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
     mem_type type = DEFAULT_MEM_TYPE;
     string type_s = "slc";
 
-    for (int i = 0; i < (argc - 1); i += 2) {
+    for (int i = 0; i < (argc - 1); i++) {
         if (strcmp(argv[i], PARAM_BLOCK_SIZE) == 0) {
             try {
                 block_size = stoi(argv[i + 1]);
@@ -128,8 +129,6 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
         }
     }
 
-    cout << "=================================================================" << endl;
-
     cout << "Vami nastavene parametry:\n";
     cout << "Velikost stranky: " << page_size << " byte" << endl;
     cout << "Velikost bloku: " << block_size << " byte" << endl;
@@ -145,7 +144,8 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
 
 int main(int argc, char **argv) {
 
-    string command;
+    string command, line;
+    string args[5] = {};
 
     istream *input = &cin;
     ostream *output = &cout;
@@ -163,12 +163,15 @@ int main(int argc, char **argv) {
     cout << "| |      | | | (_| | \\__ \\ | | | |    ____) | | | | | | | | |" << endl;
     cout << "|_|      |_|  \\__,_| |___/ |_| |_|   |_____/  |_| |_| |_| |_|" << endl;
 
+    cout << "=================================================================" << endl;
+
     if (argc > 1) {
         ifstream input_file;
         ofstream output_file;
 
-        for (int i = 0; i < (argc - 1); i += 2) {
+        for (int i = 0; i < (argc - 1); i++) {
             if (strcmp(argv[i], PARAM_FILE_IN) == 0) {
+                cout << "1\n";
                 changed_input++;
                 input_file = ifstream(argv[i + 1]);
                 if (input_file) {
@@ -202,16 +205,25 @@ int main(int argc, char **argv) {
         while (true) {
             *input >> command;
 
-            cout << command << endl;
+            int i = 0;
+
+            cout << "command: " << command << endl;
 
             if (command == string(COM_STOP)) {
                 break;
             } else if (command == string(COM_READ_PAGE)) {
-                int_16 address;
-                *input >> address;
-                u_char *data = flashMemory->Read_Page(address);
-                if (!data) {
-                    *output << "Nepodařilo se načíst stránku.\n";
+                try {
+                    *input >> line;
+                    u_char *data = flashMemory->Read_Page((int16_t) stoi(line));
+                    if (!data) {
+                        *output << "Nepodařilo se načíst stránku.\n";
+                        return EXIT_FAILURE;
+                    }
+
+                    *output << "Stranka byla nactena.\n";
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
                 }
 
                 *output << "Obsah stránky byl načten.\n";
@@ -221,20 +233,29 @@ int main(int argc, char **argv) {
             } else if (command == string(COM_READ_ID)) {
                 flashMemory->Read_ID();
                 *output << "ID zařízení bylo přečteno.\n";
-            } else if (command == string(COM_PROGRAM_PAGE_TIME)) {
-                int_16 address;
-                string data;
-                *input >> address;
-                *input >> data;
-                flashMemory->Program_Page(address, data);
-                *output << "Stránka byla naprogramována.\n";
+            } else if (command == string(COM_PROGRAM_PAGE)) {
+                try {
+                    *input >> line;
+                    *output << "adresa: " << line << endl;
+                    *input >> line;
+                    *output << "data: " << line << endl;
+                    flashMemory->Program_Page((int16_t) stoi(line), line);
+                    *output << "Stránka byla naprogramována.\n";
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
+                }
             } else if (command == string(COM_PROGRAM_DATA_MOVE)) {
                 *output << "Obsah stránky by naprogramován na jiné místo.\n";
             } else if (command == string(COM_BLOCK_ERASE)) {
-                int_16 address;
-                *input >> address;
-                flashMemory->Block_Erase(address);
-                *output << "Obsah bloku byl vymazán.\n";
+                try {
+                    *input >> line;
+                    flashMemory->Block_Erase((int16_t) stoi(line));
+                    *output << "Obsah bloku byl vymazán.\n";
+                } catch (const std::invalid_argument & e) {
+                    cout << "Parametr musi byt cislo!\n";
+                    return EXIT_FAILURE;
+                }
             } else if (command == string(COM_RESET)) {
                 flashMemory->Reset();
                 *output << "Paměť byla vyresetována.\n";

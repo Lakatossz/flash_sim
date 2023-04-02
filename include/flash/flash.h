@@ -42,6 +42,12 @@ typedef enum Page_Metadata {
     WEAR = 16,
 } Page_Metadata;
 
+typedef enum Time_Type {
+    READ_PAGE_TIME,
+    PAGE_PROG_TIME,
+    ERASE_TIME,
+} Time_Type;
+
 typedef struct nand_metadata_struct {
     uuid_t id{}; /** Identifikátor paměti. */
     int_32 read_page_time = DEFAULT_READ_PAGE_TIME;
@@ -58,6 +64,7 @@ typedef struct nand_metadata_struct {
     int_32 md_b_size = 0; /** Celkovy pocet metadat jednoho bloku. */
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     mem_type memory_type = DEFAULT_MEM_TYPE; /** Typ paměti - určuje velikost buňky. */
+    int_32 mem_time = 0; /** Cas behu pameti. */
 } nand_metadata;
 
 /**
