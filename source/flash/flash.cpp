@@ -88,7 +88,7 @@ uuid_t* Flash_Memory::Read_ID()
     return &m.md.id;
 }
 
-void Flash_Memory::Program_Page(int_16 addr, u_char *data)
+void Flash_Memory::Program_Page(int_16 addr, string data)
 {
     /** Zkontroluju adresu bloku. */
     if ((addr >> 8) >= m.md.num_of_blocks) {
@@ -102,7 +102,7 @@ void Flash_Memory::Program_Page(int_16 addr, u_char *data)
         return;
     }
 
-    if (!data) {
+    if (data.length() <= 0 && data.length() > m.md.page_size) {
         cout << "Data nemohou být uložena.\n";
         return;
     }
@@ -117,7 +117,7 @@ void Flash_Memory::Program_Page(int_16 addr, u_char *data)
         return;
     }
 
-    memcpy(data, &m.data[pointer], m.md.page_size);
+    memcpy((u_char *) data.c_str(), &m.data[pointer], m.md.page_size);
 }
 
 void Flash_Memory::Program_Data_Move(int_32 old_row_addr, int_32 new_row_addr)
@@ -174,7 +174,7 @@ u_char* Flash_Memory::Random_Data_Read()
     return nullptr;
 }
 
-void Flash_Memory::Random_Data_Input(u_char *data)
+void Flash_Memory::Random_Data_Input()
 {
 
 }

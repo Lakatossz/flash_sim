@@ -105,7 +105,7 @@ public:
     /**
      * Nastaví data do stránky dané adresou.
      */
-    void Program_Page(int_16 addr, u_char *data);
+    void Program_Page(int_16 addr, string data);
 
     /**
      * Přesune data uvnitř paměti.
@@ -132,5 +132,5 @@ public:
     /**
      * Nastaví náhodná data až o velikosti stránky do page registru
      */
-    void Random_Data_Input(u_char *data);
+    void Random_Data_Input();
 };
