@@ -17,7 +17,8 @@ using namespace std;
 #define MEM_TYPE_QLC "qlc"
 
 #define DEFAULT_PAGE_SIZE 512
-#define DEFAULT_BLOCK_SIZE 16
+#define DEFAULT_BLOCK_SIZE 8192
+#define DEFAULT_NUM_OF_BLOCKS 16
 #define DEFAULT_READ_PAGE_TIME 10
 #define DEFAULT_PAGE_PROG_TIME 15
 #define DEFAULT_ERASE_TIME 30
@@ -87,7 +88,7 @@ public:
 
     Flash_Memory();
 
-    Flash_Memory(int_32 page_size, int_32 block_size, mem_type memory_type,
+    Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, mem_type memory_type,
                  int_32 read_page_time, int_32 page_prog_time, int_32 erase_time);
 
     ~Flash_Memory();

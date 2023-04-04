@@ -33,11 +33,12 @@ Flash_Memory::Flash_Memory()
     m.md.page_size = DEFAULT_PAGE_SIZE;
     m.md.block_size = DEFAULT_BLOCK_SIZE;
 }
-Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, mem_type memory_type,
+Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, mem_type memory_type,
                            int_32 read_page_time, int_32 page_prog_time, int_32 erase_time)
 {
     m.md.page_size = page_size;
     m.md.block_size = block_size;
+    m.md.num_of_blocks = number_of_blocks;
     m.md.memory_type = memory_type;
     m.md.read_page_time = read_page_time;
     m.md.page_prog_time = page_prog_time;
@@ -50,8 +51,8 @@ Flash_Memory::~Flash_Memory() = default;
 
 bool Flash_Memory::Init()
 {
-    /** Vypočítám počet bloků podle zadaných vstupních parametrů. */
-    m.md.num_of_blocks = (m.md.num_of_pages * m.md.page_size) / m.md.block_size;
+    /** Pocet stranek uvnitr bloku. */
+    m.md.num_of_pages = m.md.block_size / m.md.page_size;
 
     /** Počet bytů, které paměť obsahuje. */
     m.md.mem_size = m.md.num_of_blocks * m.md.block_size;
@@ -67,6 +68,13 @@ bool Flash_Memory::Init()
     memset(m.data, 0L, m.md.true_mem_size);
 
 //    uuid_generate_random(m.md.id);
+
+    cout << "Page size: " << m.md.page_size << endl;
+    cout << "Block size: " << m.md.block_size << endl;
+    cout << "Number of pages: " << m.md.num_of_pages << endl;
+    cout << "Number of blocks: " << m.md.num_of_blocks << endl;
+    cout << "Memory size: " << m.md.mem_size << endl;
+    cout << "True memory size: " << m.md.true_mem_size << endl;
 
     return true;
 }
@@ -105,7 +113,7 @@ u_char* Flash_Memory::Read_Page(int_16 addr)
         return nullptr;
     }
 
-    memcpy(&m.data[pointer], buf, m.md.page_size);
+    memcpy(buf, &m.data[pointer], m.md.page_size);
 
     return buf;
 }
@@ -124,7 +132,7 @@ void Flash_Memory::Program_Page(int_16 addr, string data)
 {
     /** Zkontroluju adresu bloku. */
     if ((addr >> 8) >= m.md.num_of_blocks) {
-        cout << "Adresa bloku je příliš velká.\n";
+        cout << "Adresa bloku je příliš velká. " << (addr >> 8) << " " << m.md.num_of_blocks << "\n";
         m.md.status = m.md.status | (1 << 5);
         return;
         /** Zkontroluju adresu stránky. */
@@ -152,7 +160,7 @@ void Flash_Memory::Program_Page(int_16 addr, string data)
         return;
     }
 
-    memcpy((u_char *) data.c_str(), &m.data[pointer], m.md.page_size);
+    memcpy(&m.data[pointer], (u_char *) data.c_str(), m.md.page_size);
 }
 
 void Flash_Memory::Program_Data_Move(int_32 old_row_addr, int_32 new_row_addr)
