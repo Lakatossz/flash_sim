@@ -3,65 +3,6 @@
 #include <cstdlib>
 #include "../include/flash/flash.h"
 
-/**
- * Definice parametrů, vložených při spuštění programu.
- */
-#define PARAM_FILE_IN "-input_file"
-#define PARAM_FILE_OUT "-output_file"
-#define PARAM_BLOCK_SIZE "-block_size"
-#define PARAM_PAGE_SIZE "-page_size"
-#define PARAM_NUM_OF_BLOCK "-num_of_block"
-#define PARAM_MEM_TYPE "-mem_type"
-
-/**
- * Definice parametrů, vložených buď při spuštění nebo při běhu.
- * TODO
- */
-#define PARAM_READ_PAGE_TIME "-read_page_time"
-#define PARAM_PAGE_PROG_TIME "-page_prog_time"
-#define PARAM_ERASE_TIME "-erase_time"
-
-/**
- * Maximální možné hodnoty parametrů.
- * TODO Potřeba doupřesnit.
- */
-#define MAX_BLOCK_SIZE 10000
-#define MAX_PAGE_SIZE 1024
-#define MAX_NUM_OF_BLOCK 128
-#define MAX_READ_PAGE_TIME 1000
-#define MAX_PAGE_PROG_TIME 1000
-#define MAX_ERASE_TIME 1000
-
-/**
- * Minimální možné hodnoty parametrů.
- * TODO Potřeba doupřesnit.
- */
-#define MIN_BLOCK_SIZE 1
-#define MIN_PAGE_SIZE 1
-#define MIN_NUM_OF_BLOCK 1
-#define MIN_READ_PAGE_TIME 1
-#define MIN_PAGE_PROG_TIME 1
-#define MIN_ERASE_TIME 1
-
-/**
- * Definové kódy příkazů.
- */
-#define COM_READ_PAGE "0x03"
-#define COM_READ_STATUS "0x04"
-#define COM_READ_ID "0x05"
-#define COM_PROGRAM_PAGE "0x06"
-#define COM_PROGRAM_DATA_MOVE "0x07"
-#define COM_BLOCK_ERASE "0x08"
-#define COM_RESET "0x09"
-#define COM_RANDOM_DATA_READ "0x0a"
-#define COM_RANDOM_DATA_INPUT "0x0b"
-
-/** Příkaz ukončující běh programu. */
-#define COM_STOP "STOP"
-
-/** Odpověď na neznámý příkaz. */
-#define COM_UNKNOWN "Neznamy prikaz!\n"
-
 using namespace std;
 
 void writeHead(ostream *output) {
@@ -93,7 +34,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
     int_32 read_page_time = DEFAULT_READ_PAGE_TIME;
     int_32 page_prog_time = DEFAULT_PAGE_PROG_TIME;
     int_32 erase_time = DEFAULT_ERASE_TIME;
-    mem_type type = DEFAULT_MEM_TYPE;
+    Mem_Type type = DEFAULT_MEM_TYPE;
     string type_s = "slc";
 
     /**
