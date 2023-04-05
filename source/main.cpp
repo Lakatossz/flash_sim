@@ -31,9 +31,9 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
     int_32 page_size = DEFAULT_PAGE_SIZE;
     int_32 block_size = DEFAULT_BLOCK_SIZE;
     int_32 num_of_blocks = DEFAULT_NUM_OF_BLOCKS;
-    int_32 read_page_time = DEFAULT_READ_PAGE_TIME;
-    int_32 page_prog_time = DEFAULT_PAGE_PROG_TIME;
-    int_32 erase_time = DEFAULT_ERASE_TIME;
+    float read_page_time = DEFAULT_READ_PAGE_TIME;
+    float page_prog_time = DEFAULT_PAGE_PROG_TIME;
+    float erase_time = DEFAULT_ERASE_TIME;
     Mem_Type type = DEFAULT_MEM_TYPE;
     string type_s = "slc";
 
@@ -77,7 +77,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
             }
         } else if (strcmp(argv[i], PARAM_READ_PAGE_TIME) == 0) {
             try {
-                read_page_time = stoi(argv[i + 1]);
+                read_page_time = stof(argv[i + 1]);
                 if (read_page_time > MAX_READ_PAGE_TIME || read_page_time < MIN_READ_PAGE_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_READ_PAGE_TIME <<
                          " a " << MAX_READ_PAGE_TIME << "!\n";
@@ -90,7 +90,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
 
         } else if (strcmp(argv[i], PARAM_PAGE_PROG_TIME) == 0) {
             try {
-                page_prog_time = stoi(argv[i + 1]);
+                page_prog_time = stof(argv[i + 1]);
                 if (page_prog_time > MAX_PAGE_PROG_TIME || page_prog_time < MIN_PAGE_PROG_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_PAGE_PROG_TIME <<
                          " a " << MAX_PAGE_PROG_TIME << "!\n";
@@ -102,7 +102,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
             }
         } else if (strcmp(argv[i], PARAM_ERASE_TIME) == 0) {
             try {
-                erase_time = stoi(argv[i + 1]);
+                erase_time = stof(argv[i + 1]);
                 if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
                     return nullptr;

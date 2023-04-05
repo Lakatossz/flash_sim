@@ -25,6 +25,10 @@ int_32 counter_value(u_char *counter, int size) {
     return value;
 }
 
+u_char * eec_value(u_char *eec, int size) {
+
+}
+
 /**
  *
  * @param time_type
@@ -62,15 +66,29 @@ Flash_Memory::Flash_Memory()
     m.md.block_size = DEFAULT_BLOCK_SIZE;
 }
 Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, Mem_Type memory_type,
-                           int_32 read_page_time, int_32 page_prog_time, int_32 erase_time)
+                           float read_page_time, float page_prog_time, float erase_time)
 {
     m.md.page_size = page_size;
     m.md.block_size = block_size;
     m.md.num_of_blocks = number_of_blocks;
     m.md.memory_type = memory_type;
-    m.md.read_page_time = read_page_time;
-    m.md.page_prog_time = page_prog_time;
-    m.md.erase_time = erase_time;
+
+    for (int i = 0; i < m.md.num_of_pages; ++i) {
+        m.md.pages_stats[i].read_page_time = read_page_time;
+        m.md.pages_stats[i].page_prog_time = page_prog_time;
+        m.md.pages_stats[i].last_read_page_time = 0;
+        m.md.pages_stats[i].last_page_prog_time = 0;
+        m.md.pages_stats[i].total_read_page_time = 0;
+        m.md.pages_stats[i].total_page_prog_time = 0;
+        m.md.pages_stats[i].com_time = 0;
+    }
+
+    for (int i = 0; i < m.md.num_of_blocks; ++i) {
+        m.md.blocks_stats[i].erase_time = erase_time;
+        m.md.blocks_stats[i].last_erase_time = 0;
+        m.md.blocks_stats[i].total_erase_time = 0;
+    }
+
     m.md.block_wear_size = 4;
     m.md.md_p_size = 8;
     m.md.md_b_size = 8;
@@ -139,7 +157,11 @@ u_char* Flash_Memory::Read_Page(int_16 addr)
     memcpy(buf, &m.data[pointer], m.md.page_size);
 
     /** Aktualizace času běhu. */
-    m.md.mem_time += m.md.read_page_time;
+    m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].total_read_page_time +=
+            m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].read_page_time;
+
+    m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].last_read_page_time =
+            m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].read_page_time;
     increase_time(READ_PAGE_TIME);
 
     return buf;
@@ -183,7 +205,12 @@ void Flash_Memory::Program_Page(int_16 addr, const string& data)
     memcpy(&m.data[pointer], (u_char *) data.c_str(), m.md.page_size);
 
     /** Aktualizace času běhu. */
-    m.md.mem_time += m.md.page_prog_time;
+    m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].total_page_prog_time +=
+            m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].page_prog_time;
+
+    m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].last_page_prog_time =
+            m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].page_prog_time;
+
     increase_time(PAGE_PROG_TIME);
 }
 
@@ -208,7 +235,12 @@ void Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     }
 
     /** Aktualizace času běhu. */
-    m.md.mem_time += m.md.page_prog_time;
+    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].total_page_prog_time +=
+            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].page_prog_time;
+
+    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].last_page_prog_time =
+            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].page_prog_time;
+
     increase_time(PAGE_PROG_TIME);
 
     int_32 new_pointer = old_addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
@@ -229,7 +261,12 @@ void Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     memcpy(&m.data[old_pointer], &m.data[new_pointer], m.md.page_size);
 
     /** Aktualizace času běhu. */
-    m.md.mem_time += m.md.read_page_time;
+    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].total_read_page_time +=
+            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].read_page_time;
+
+    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].last_read_page_time =
+            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].read_page_time;
+
     increase_time(READ_PAGE_TIME);
 }
 
@@ -267,7 +304,12 @@ void Flash_Memory::Block_Erase(int_8 addr)
     }
 
     /** Aktualizace času běhu. */
-    m.md.mem_time += m.md.erase_time;
+    m.md.blocks_stats[(addr >> 8)].total_erase_time +=
+            m.md.blocks_stats[(addr >> 8)].erase_time;
+
+    m.md.blocks_stats[(addr >> 8)].last_erase_time =
+            m.md.blocks_stats[(addr >> 8)].erase_time;
+
     increase_time(ERASE_TIME);
 }
 
@@ -283,6 +325,190 @@ u_char* Flash_Memory::Random_Data_Read()
 }
 
 void Flash_Memory::Random_Data_Input()
+{
+
+}
+
+int_32 Flash_Memory::Num_Of_Writes(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+
+    return counter_value(&m.data[pointer], 4);
+}
+
+int_32 Flash_Memory::Num_Of_Reads(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+
+    return counter_value(&m.data[pointer], 4);
+}
+
+u_char * Flash_Memory::ECC_Info(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return nullptr;
+    }
+
+    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+
+    return eec_value(&m.data[pointer], m.md.ecc_size);
+}
+
+float Flash_Memory::Read_Time_Last(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].last_read_page_time;
+}
+
+float Flash_Memory::Program_Time_Last(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].last_page_prog_time;
+}
+
+float Flash_Memory::Read_Time_Total(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].total_read_page_time;
+}
+
+float Flash_Memory::Program_Time_Total(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].total_page_prog_time;
+}
+
+float Flash_Memory::Com_Total_Time(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].com_time;
+}
+
+int_32 Flash_Memory::Num_Of_Erases_Page(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+}
+
+u_char * Flash_Memory::Sector_Status_Block(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return nullptr;
+    }
+}
+
+int_32 Flash_Memory::Num_Of_Erases_Block(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+}
+
+float Flash_Memory::Erase_Time_Total(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    return m.md.blocks_stats[(addr >> 8)].last_erase_time = m.md.blocks_stats[(addr >> 8)].total_erase_time;
+}
+
+float Flash_Memory::Erase_Time_Last(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+
+    return m.md.blocks_stats[(addr >> 8)].last_erase_time = m.md.blocks_stats[(addr >> 8)].last_erase_time;
+}
+
+bool Flash_Memory::Is_Bad_Block(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return false;
+    }
+}
+
+int_32 Flash_Memory::Num_Of_Bad_Pages(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+}
+
+u_char * Flash_Memory::ECC_Histogram(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return nullptr;
+    }
+}
+
+int_32 Flash_Memory::Num_Of_Writes_Page(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+}
+
+int_32 Flash_Memory::Num_Of_Reads_Page(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return 0;
+    }
+}
+
+u_char * Flash_Memory::Sector_Status_Page(int_16 addr)
+{
+    if (!check_address(m, addr)) {
+        return nullptr;
+    }
+}
+
+int_32 Num_Of_Bad_Blocks()
+{
+
+}
+
+int_32 Num_Of_Bad_Pages()
+{
+
+}
+
+u_char * ECC_Histogram()
+{
+
+}
+
+int_32 Num_Of_Writes()
+{
+
+}
+
+int_32 Num_Of_Reads()
 {
 
 }

@@ -105,11 +105,14 @@ typedef enum Block_Metadata_Enum {
     BLOCK_VALID = 0,
     BLOCK_BAD = 1,
     BLOCK_WEAR = 2,
+    BLOCK_BAD_PAGES = 16,
 } Block_Metadata;
 
 typedef enum Page_Metadata_Enum {
     PAGE_VALID = 0,
     PAGE_ECC = 1,
+    PAGE_WRITE_NUM = 16,
+    PAGE_READ_NUM = 32,
 } Page_Metadata;
 
 /**
@@ -121,11 +124,26 @@ typedef enum Time_Type {
     ERASE_TIME,
 } Time_Type;
 
+typedef struct page_statistics_struct {
+    float read_page_time = DEFAULT_READ_PAGE_TIME; /** Čas čtení stránky. */
+    float page_prog_time = DEFAULT_PAGE_PROG_TIME; /** Čas naprogramování stránky. */
+    float last_read_page_time = 0; /** Poslední čas čtení stránky. */
+    float last_page_prog_time = 0; /** Poslední čas naprogramování stránky. */
+    float total_read_page_time = 0; /** Celkový čas čtení stránky. */
+    float total_page_prog_time = 0; /** Celkový čas naprogramování stránky. */
+    float com_time;
+} page_statistics;
+
+typedef struct block_statistics_struct {
+    float erase_time = DEFAULT_ERASE_TIME; /** Čas smazání bloku. */
+    float last_erase_time = 0; /** Poslední čas smazání bloku. */
+    float total_erase_time = 0; /** Celkový čas smazání bloku. */
+} block_statistics;
+
 typedef struct nand_metadata_struct {
     uuid_t id{}; /** Identifikátor paměti. */
-    int_32 read_page_time = DEFAULT_READ_PAGE_TIME; /** Čas čtení stránky. */
-    int_32 page_prog_time = DEFAULT_PAGE_PROG_TIME; /** Čas naprogramování stránky. */
-    int_32 erase_time = DEFAULT_ERASE_TIME; /** Čas smazání bloku. */
+    block_statistics *blocks_stats = nullptr;
+    page_statistics *pages_stats = nullptr;
     int_32 page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
     int_32 num_of_pages = 0; /** Počet stránek. */
     int_32 block_size = DEFAULT_BLOCK_SIZE; /** Velikost bloku. */
@@ -162,7 +180,7 @@ public:
     Flash_Memory();
 
     Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, Mem_Type memory_type,
-                 int_32 read_page_time, int_32 page_prog_time, int_32 erase_time);
+                 float read_page_time, float page_prog_time, float erase_time);
 
     ~Flash_Memory();
 
@@ -214,4 +232,52 @@ public:
      * Nastaví náhodná data až o velikosti stránky do page registru
      */
     void Random_Data_Input();
+
+    int_32 Num_Of_Writes(int_16 addr);
+
+    int_32 Num_Of_Reads(int_16 addr);
+
+    u_char * ECC_Info(int_16 addr);
+
+    float Read_Time_Last(int_16 addr);
+
+    float Program_Time_Last(int_16 addr);
+
+    float Read_Time_Total(int_16 addr);
+
+    float Program_Time_Total(int_16 addr);
+
+    float Com_Total_Time(int_16 addr);
+
+    int_32 Num_Of_Erases_Page(int_16 addr);
+
+    u_char * Sector_Status_Block(int_16 addr);
+
+    int_32 Num_Of_Erases_Block(int_16 addr);
+
+    float Erase_Time_Total(int_16 addr);
+
+    float Erase_Time_Last(int_16 addr);
+
+    bool Is_Bad_Block(int_16 addr);
+
+    int_32 Num_Of_Bad_Pages(int_16 addr);
+
+    u_char * ECC_Histogram(int_16 addr);
+
+    int_32 Num_Of_Writes_Page(int_16 addr);
+
+    int_32 Num_Of_Reads_Page(int_16 addr);
+
+    u_char * Sector_Status_Page(int_16 addr);
+
+    int_32 Num_Of_Bad_Blocks();
+
+    int_32 Num_Of_Bad_Pages();
+
+    u_char * ECC_Histogram();
+
+    int_32 Num_Of_Writes();
+
+    int_32 Num_Of_Reads();
 };
