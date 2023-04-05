@@ -112,7 +112,6 @@ typedef enum Page_Metadata_Enum {
     PAGE_VALID = 0,
     PAGE_ECC = 1,
     PAGE_WRITE_NUM = 16,
-    PAGE_READ_NUM = 32,
 } Page_Metadata;
 
 /**
@@ -132,12 +131,14 @@ typedef struct page_statistics_struct {
     float total_read_page_time = 0; /** Celkový čas čtení stránky. */
     float total_page_prog_time = 0; /** Celkový čas naprogramování stránky. */
     float com_time;
+    int_32 num_of_reads = 0;
 } page_statistics;
 
 typedef struct block_statistics_struct {
     float erase_time = DEFAULT_ERASE_TIME; /** Čas smazání bloku. */
     float last_erase_time = 0; /** Poslední čas smazání bloku. */
     float total_erase_time = 0; /** Celkový čas smazání bloku. */
+    int_32 num_of_reads = 0;
 } block_statistics;
 
 typedef struct nand_metadata_struct {
@@ -157,6 +158,7 @@ typedef struct nand_metadata_struct {
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     Mem_Type memory_type = DEFAULT_MEM_TYPE; /** Typ paměti - určuje velikost buňky. */
     int_32 mem_time = 0; /** Doba běhu paměti v μs. */
+    int_32 num_of_reads = 0;
 } nand_metadata;
 
 /**

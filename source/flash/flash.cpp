@@ -81,17 +81,20 @@ Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of
         m.md.pages_stats[i].total_read_page_time = 0;
         m.md.pages_stats[i].total_page_prog_time = 0;
         m.md.pages_stats[i].com_time = 0;
+        m.md.pages_stats[i].num_of_reads = 0;
     }
 
     for (int i = 0; i < m.md.num_of_blocks; ++i) {
         m.md.blocks_stats[i].erase_time = erase_time;
         m.md.blocks_stats[i].last_erase_time = 0;
         m.md.blocks_stats[i].total_erase_time = 0;
+        m.md.blocks_stats[i].num_of_reads = 0;
     }
 
     m.md.block_wear_size = 4;
     m.md.md_p_size = 8;
     m.md.md_b_size = 8;
+    m.md.num_of_reads = 0;
 }
 
 Flash_Memory::~Flash_Memory() = default;
@@ -164,6 +167,10 @@ u_char* Flash_Memory::Read_Page(int_16 addr)
             m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].read_page_time;
     increase_time(READ_PAGE_TIME);
 
+    m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].num_of_reads++;
+    m.md.blocks_stats[(addr >> 8)].num_of_reads++;
+    m.md.num_of_reads++;
+
     return buf;
 }
 
@@ -235,13 +242,17 @@ void Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     }
 
     /** Aktualizace času běhu. */
-    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].total_page_prog_time +=
-            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].page_prog_time;
+    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].total_read_page_time +=
+            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].read_page_time;
 
-    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].last_page_prog_time =
-            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].page_prog_time;
+    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].last_read_page_time =
+            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].read_page_time;
 
-    increase_time(PAGE_PROG_TIME);
+    increase_time(READ_PAGE_TIME);
+
+    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].num_of_reads++;
+    m.md.blocks_stats[(old_addr >> 8)].num_of_reads++;
+    m.md.num_of_reads++;
 
     int_32 new_pointer = old_addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
@@ -261,13 +272,13 @@ void Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     memcpy(&m.data[old_pointer], &m.data[new_pointer], m.md.page_size);
 
     /** Aktualizace času běhu. */
-    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].total_read_page_time +=
-            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].read_page_time;
+    m.md.pages_stats[(new_addr >> 8) * m.md.num_of_pages + (new_addr & (uint8_t) ~0L)].total_page_prog_time +=
+            m.md.pages_stats[(new_addr >> 8) * m.md.num_of_pages + (new_addr & (uint8_t) ~0L)].page_prog_time;
 
-    m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].last_read_page_time =
-            m.md.pages_stats[(old_addr >> 8) * m.md.num_of_pages + (old_addr & (uint8_t) ~0L)].read_page_time;
+    m.md.pages_stats[(new_addr >> 8) * m.md.num_of_pages + (new_addr & (uint8_t) ~0L)].last_page_prog_time =
+            m.md.pages_stats[(new_addr >> 8) * m.md.num_of_pages + (new_addr & (uint8_t) ~0L)].page_prog_time;
 
-    increase_time(READ_PAGE_TIME);
+    increase_time(PAGE_PROG_TIME);
 }
 
 //for (int i = 0; i < numBytes; i++) {
@@ -488,27 +499,27 @@ u_char * Flash_Memory::Sector_Status_Page(int_16 addr)
     }
 }
 
-int_32 Num_Of_Bad_Blocks()
+int_32 Flash_Memory::Num_Of_Bad_Blocks()
 {
 
 }
 
-int_32 Num_Of_Bad_Pages()
+int_32 Flash_Memory::Num_Of_Bad_Pages()
 {
 
 }
 
-u_char * ECC_Histogram()
+u_char * Flash_Memory::ECC_Histogram()
 {
 
 }
 
-int_32 Num_Of_Writes()
+int_32 Flash_Memory::Num_Of_Writes()
 {
 
 }
 
-int_32 Num_Of_Reads()
+int_32 Flash_Memory::Num_Of_Reads()
 {
-
+    return m.md.num_of_reads;
 }
