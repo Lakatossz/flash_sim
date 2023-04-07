@@ -87,7 +87,6 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
                 *output << "Parametr musi byt cislo!\n";
                 return nullptr;
             }
-
         } else if (strcmp(argv[i], PARAM_PAGE_PROG_TIME) == 0) {
             try {
                 page_prog_time = stof(argv[i + 1]);
@@ -144,13 +143,17 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
     *output << "=================================================================" << endl;
 
     /** Nakonec se vytvoří nová instance paměti. */
-    return new Flash_Memory(page_size, block_size, num_of_blocks, type, read_page_time, page_prog_time, erase_time);
+    return new Flash_Memory(page_size, block_size, num_of_blocks, type,
+                            read_page_time,page_prog_time, erase_time);
 }
 
 int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) {
 
     string command;
     string args[5] = {};
+    int number = 0;
+    float value = 0.0;
+    bool bool_value = true;
 
     while (true) {
         *input >> command;
@@ -161,13 +164,25 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_READ_PAGE)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->Read_Page((int16_t) stoi(args[0]));
+                if (!flashMemory->Read_Page((int16_t) stoi(args[0]))) {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Stranka byla nactena.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_READ_CACHE)) {
+            try {
+                *input >> args[0];
+                u_char *data = flashMemory->Read_Cache();
                 if (!data) {
-                    *output << "Nepodařilo se načíst stránku.\n";
+                    *output << "Nepodarilo se provest operaci.\n";
                     return EXIT_FAILURE;
                 }
                 *output << "Nactena data: " << data << endl;
-//                    *output << "Stranka byla nactena.\n";
+//                    *output << "Cache byla nactena.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -182,11 +197,19 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             try {
                 *input >> args[0];
                 *output << "adresa: " << args[0] << endl;
-                *input >> args[1];
-                *output << "data: " << args[1] << endl;
-                flashMemory->Program_Page((int16_t) stoi(args[0]), args[1]);
+                if (flashMemory->Program_Page((int16_t) stoi(args[0]))) {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo! " << "\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_WRITE_CACHE)) {
+            *input >> args[1];
+            *output << "data: " << args[1] << endl;
+            if (flashMemory->Write_Cache(args[1])) {
+                *output << "Nepodarilo se provest operaci.\n";
                 return EXIT_FAILURE;
             }
         } else if (command == string(COM_PROGRAM_DATA_MOVE)) {
@@ -195,7 +218,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *output << "puvodni adresa: " << args[0] << endl;
                 *input >> args[1];
                 *output << "nova adresa: " << args[1] << endl;
-                flashMemory->Program_Data_Move((int16_t) stoi(args[0]), (int16_t) stoi(args[1]));
+                if (flashMemory->
+                Program_Data_Move((int16_t) stoi(args[0]), (int16_t) stoi(args[1]))) {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo! " << "\n";
                 return EXIT_FAILURE;
@@ -204,8 +231,361 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_BLOCK_ERASE)) {
             try {
                 *input >> args[0];
-                *output << "adresa: " << args[0] << endl;
-                flashMemory->Block_Erase((int16_t) stoi(args[0]));
+                if (flashMemory->Block_Erase((int16_t) stoi(args[0]))) {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_WRITES)) {
+            try {
+                *input >> args[0];
+                number = flashMemory->Num_Of_Writes_Page((int16_t) stoi(args[0]));
+                if (number >= 0) {
+                    *output << "Na stranku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_READS)) {
+            try {
+                *input >> args[0];
+                number = flashMemory->Num_Of_Reads_Page((int16_t) stoi(args[0]));
+                if (number >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byla prectena " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_ECC_INFO)) {
+            try {
+                *input >> args[0];
+                u_char *data = flashMemory->ECC_Info((int16_t) stoi(args[0]));
+                if(!data) {
+                    *output << "Nepodarilo se precist ECC info na adrese " << args[0] << ".\n";
+                    return EXIT_FAILURE;
+                } else {
+                    *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_READ_TIMES_LAST)) {
+            try {
+                *input >> args[0];
+                value = flashMemory->Read_Time_Last((int16_t) stoi(args[0]));
+                if (value >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_PROG_TIME_LAST)) {
+            try {
+                *input >> args[0];
+                value = flashMemory->Program_Time_Last((int16_t) stoi(args[0]));
+                if (value >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byla naprogramovana za " << value << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_READ_TIME_TOTAL)) {
+            try {
+                *input >> args[0];
+                value = flashMemory->Read_Time_Last((int16_t) stoi(args[0]));
+                if (value >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_PROG_TIME_TOTAL)) {
+            try {
+                *input >> args[0];
+                value = flashMemory->Program_Time_Total((int16_t) stoi(args[0]));
+                if (value >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byla dohromady naprogramovana za " << value << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_COM_TOTAL_TIME)) {
+            try {
+                *input >> args[0];
+                value = flashMemory->Com_Total_Time((int16_t) stoi(args[0]));
+                if (value >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byla dohromady com za " << value << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_ERASES_PAGE)) {
+            try {
+                *input >> args[0];
+                number = flashMemory->Num_Of_Erases_Page((int16_t) stoi(args[0]));
+                if (number >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byla vymazana " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_SECTOR_STATUS_BLOCK)) {
+            try {
+                *input >> args[0];
+                u_char *data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0]));
+                if (data) {
+                    *output << "Doplnit :D.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_ERASES_BLOCK)) {
+            try {
+                *input >> args[0];
+                number = flashMemory->Num_Of_Erases_Block((int16_t) stoi(args[0]));
+                if (number >= 0) {
+                    *output << "Blok na adrese " << args[0] << " byl smazan " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_ERASE_TIME_TOTAL)) {
+            try {
+                *input >> args[0];
+                value = flashMemory->Erase_Time_Total((int16_t) stoi(args[0]));
+                if (value >= 0) {
+                    *output << "Blok na adrese " << args[0] << " byl dohormady smazan za " << value << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_ERASE_TIME_LAST)) {
+            try {
+                *input >> args[0];
+                value = flashMemory->Erase_Time_Last((int16_t) stoi(args[0]));
+                if (value >= 0) {
+                    *output << "Stranka na adrese " << args[0] << " byl smazan za " << number << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_IS_BAD_BLOCK)) {
+            try {
+                *input >> args[0];
+                bool_value = flashMemory->Program_Time_Total((int16_t) stoi(args[0]));
+                *output << "Blok na adrese " << args[0] << " je spatny: " << bool_value << endl;
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_BAD_PAGES)) {
+            try {
+                *input >> args[0];
+                number = flashMemory->Num_Of_Erases_Block((int16_t) stoi(args[0]));
+                if (number >= 0) {
+                    *output << "Blok na adrese " << args[0] << " ma " << number << "poskozenych stranek.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_ECC_HISTOGRAM)) {
+            try {
+                *input >> args[0];
+                u_char *data = flashMemory->ECC_Histogram((int16_t) stoi(args[0]));
+                if(!data) {
+                    *output << "Nepodarilo se precist ECC histogram bloku na adrese " << args[0] << ".\n";
+                    return EXIT_FAILURE;
+                } else {
+                    *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_WRITES_PAGE)) {
+            try {
+                *input >> args[0];
+                number = flashMemory->Num_Of_Writes((int16_t) stoi(args[0]));
+                if (number >= 0) {
+                    *output << "Do bloku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_READS_PAGE)) {
+            try {
+                *input >> args[0];
+                number = flashMemory->Num_Of_Reads((int16_t) stoi(args[0]));
+                if (number >= 0) {
+                    *output << "Z bloku na adrese " << args[0] << " bylo precteno " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_SECTOR_STATUS_PAGE)) {
+            try {
+                *input >> args[0];
+                u_char *data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0]));
+                if (data) {
+                    *output << "Doplnit :D.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_BAD_BLOCKS)) {
+            try {
+                number = flashMemory->Num_Of_Bad_Blocks();
+                if (number >= 0) {
+                    *output << "V pameti je " << number << "poskozenych bloku.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_BAD_PAGES_MEM)) {
+            try {
+                number = flashMemory->Num_Of_Bad_Pages();
+                if (number >= 0) {
+                    *output << "V pameti je " << number << "poskozenych stranek.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_ECC_HISTOGRAM_MEM)) {
+            try {
+                *input >> args[0];
+                u_char *data = flashMemory->ECC_Histogram();
+                if(!data) {
+                    *output << "Nepodarilo se precist ECC histogram pameti " << args[0] << ".\n";
+                    return EXIT_FAILURE;
+                } else {
+                    *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_WRITES_MEM)) {
+            try {
+                number = flashMemory->Num_Of_Writes();
+                if (number >= 0) {
+                    *output << "Do pameti bylo zapsano " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_NUM_OF_READS_MEM)) {
+            try {
+                number = flashMemory->Num_Of_Reads();
+                if (number >= 0) {
+                    *output << "Z pameti bylo cteno " << number << "krat.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
@@ -214,15 +594,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_RESET)) {
             flashMemory->Reset();
 //                *output << "Paměť byla vyresetována.\n";
-        } else if (command == string(COM_RANDOM_DATA_READ)) {
-            u_char *data = flashMemory->Random_Data_Read();
-            if (!data) {
-                *output << "Nepodařilo se načíst stránku.\n";
-            }
-//                *output << "Obsah náhodné stránky byl načten do cache.\n";
-        } else if (command == string(COM_RANDOM_DATA_INPUT)) {
-            flashMemory->Random_Data_Input();
-//                *output << "Stránka byla naprogramována náhodným obsahem.\n";
         } else {
             *output << COM_UNKNOWN;
         }
@@ -277,11 +648,11 @@ int main(int argc, char **argv) {
 
     *output << "=================================================================" << endl;
 
-    *output << "Program konci.\n";
-
     if (handleLifeCycle(output, input, flashMemory) == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
+
+    *output << "Program konci.\n";
 
     if (input_file && input_file.is_open()) {
         cout << "Zavira se vstupni soubor.\n";

@@ -62,8 +62,32 @@ using namespace std;
 #define COM_PROGRAM_DATA_MOVE "0x07"
 #define COM_BLOCK_ERASE "0x08"
 #define COM_RESET "0x09"
-#define COM_RANDOM_DATA_READ "0x0a"
-#define COM_RANDOM_DATA_INPUT "0x0b"
+#define COM_READ_CACHE "0x0a"
+#define COM_WRITE_CACHE "0x0b"
+#define COM_NUM_OF_WRITES "0x0c"
+#define COM_NUM_OF_READS "0x0d"
+#define COM_ECC_INFO "0x0e"
+#define COM_READ_TIMES_LAST "0x0f"
+#define COM_PROG_TIME_LAST "0x10"
+#define COM_READ_TIME_TOTAL "0x11"
+#define COM_PROG_TIME_TOTAL "0x12"
+#define COM_COM_TOTAL_TIME "0x13"
+#define COM_NUM_OF_ERASES_PAGE "0x14"
+#define COM_SECTOR_STATUS_BLOCK "0x15"
+#define COM_NUM_OF_ERASES_BLOCK "0x16"
+#define COM_ERASE_TIME_TOTAL "0x17"
+#define COM_ERASE_TIME_LAST "0x18"
+#define COM_IS_BAD_BLOCK "0x19"
+#define COM_NUM_OF_BAD_PAGES "0x1a"
+#define COM_ECC_HISTOGRAM "0x1b"
+#define COM_NUM_OF_WRITES_PAGE "0x1c"
+#define COM_NUM_OF_READS_PAGE "0x1d"
+#define COM_SECTOR_STATUS_PAGE "0x1e"
+#define COM_NUM_OF_BAD_BLOCKS "0x1f"
+#define COM_NUM_OF_BAD_PAGES_MEM "0x20"
+#define COM_ECC_HISTOGRAM_MEM "0x21"
+#define COM_NUM_OF_WRITES_MEM "0x22"
+#define COM_NUM_OF_READS_MEM "0x23"
 
 /** Příkaz ukončující běh programu. */
 #define COM_STOP "STOP"
@@ -152,9 +176,9 @@ typedef struct nand_metadata_struct {
     int_32 mem_size = 0; /** Velikost paměti. */
     int_32 true_mem_size = 0; /** Počet bytů pameti. */
     int_32 ecc_size = 0; /** Počet bitů ECC kódu. */
-    int_32 md_p_size = 0; /** Celkový počet metadat jedné stránky. */
-    int_32 md_b_size = 0; /** Celkový počet metadat jednoho bloku. */
-    int_32 block_wear_size = 0;
+    int_32 md_p_size = 8; /** Celkový počet metadat jedné stránky. */
+    int_32 md_b_size = 8; /** Celkový počet metadat jednoho bloku. */
+    int_32 block_wear_size = 4;
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     Mem_Type memory_type = DEFAULT_MEM_TYPE; /** Typ paměti - určuje velikost buňky. */
     int_32 mem_time = 0; /** Doba běhu paměti v μs. */
@@ -186,12 +210,17 @@ public:
 
     ~Flash_Memory();
 
-    bool Init();
+    int Init();
 
     /**
      * Vrátí data obsazené ve zvolené stránce do cache.
      */
-    u_char* Read_Page(int_16 addr);
+    int Read_Page(int_16 addr);
+
+    /**
+     * Přečte obsahe cache paměti.
+     */
+    u_char* Read_Cache();
 
     /**
      * Vrátí základní informace o statusu paměti a operaci.
@@ -204,40 +233,35 @@ public:
     uuid_t* Read_ID();
 
     /**
-     * Nastaví data do stránky dané adresou.
+     * Nastaví data do stránky dané adresou obsahem cache.
      */
-    void Program_Page(int_16 addr, const string& data);
+    int Program_Page(int_16 addr);
+
+    /**
+     * Zapíše data do cache.
+     */
+    int Write_Cache(const string& data);
 
     /**
      * Přesune data uvnitř paměti.
      */
-    void Program_Data_Move(int_16 old_addr, int_16 new_addr);
+    int Program_Data_Move(int_16 old_addr, int_16 new_addr);
 
     /**
      * Vymaže blok na dane adrese.
      * @param block_address Adresa bloku (Měla by být uvedena v LUN).
      * Adresa ve formatu 16bit čísla: ||-|-|-|-|-Blok-|-|-|-|-|-|-|-Adresa-|-|-|-|-||
      */
-    void Block_Erase(int_8 block_address);
+    int Block_Erase(int_8 block_address);
 
     /**
      * Uvede paměť do původního stavu - paměť je prázdná.
      */
-    void Reset();
+    int Reset();
 
-    /**
-     * Vrátí data obsazené ve náhodné stránce.
-     */
-    u_char* Random_Data_Read();
+    int Num_Of_Writes(int_16 addr);
 
-    /**
-     * Nastaví náhodná data až o velikosti stránky do page registru
-     */
-    void Random_Data_Input();
-
-    int_32 Num_Of_Writes(int_16 addr);
-
-    int_32 Num_Of_Reads(int_16 addr);
+    int Num_Of_Reads(int_16 addr);
 
     u_char * ECC_Info(int_16 addr);
 
@@ -251,11 +275,11 @@ public:
 
     float Com_Total_Time(int_16 addr);
 
-    int_32 Num_Of_Erases_Page(int_16 addr);
+    int Num_Of_Erases_Page(int_16 addr);
 
     u_char * Sector_Status_Block(int_16 addr);
 
-    int_32 Num_Of_Erases_Block(int_16 addr);
+    int Num_Of_Erases_Block(int_16 addr);
 
     float Erase_Time_Total(int_16 addr);
 
@@ -263,23 +287,23 @@ public:
 
     bool Is_Bad_Block(int_16 addr);
 
-    int_32 Num_Of_Bad_Pages(int_16 addr);
+    int Num_Of_Bad_Pages(int_16 addr);
 
     u_char * ECC_Histogram(int_16 addr);
 
-    int_32 Num_Of_Writes_Page(int_16 addr);
+    int Num_Of_Writes_Page(int_16 addr);
 
-    int_32 Num_Of_Reads_Page(int_16 addr);
+    int Num_Of_Reads_Page(int_16 addr);
 
     u_char * Sector_Status_Page(int_16 addr);
 
-    int_32 Num_Of_Bad_Blocks();
+    int Num_Of_Bad_Blocks();
 
-    int_32 Num_Of_Bad_Pages();
+    int Num_Of_Bad_Pages();
 
     u_char * ECC_Histogram();
 
-    int_32 Num_Of_Writes();
+    int Num_Of_Writes();
 
-    int_32 Num_Of_Reads();
+    int Num_Of_Reads();
 };
