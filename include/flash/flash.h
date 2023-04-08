@@ -89,6 +89,15 @@ using namespace std;
 #define COM_NUM_OF_WRITES_MEM "0x22"
 #define COM_NUM_OF_READS_MEM "0x23"
 
+#define COM_CHANGE_PROG_TIME_PAGE "0x24"
+#define COM_CHANGE_PROG_TIME_BLOCK "0x25"
+#define COM_CHANGE_PROG_TIME_MEM "0x26"
+#define COM_CHANGE_READ_TIME_PAGE "0x27"
+#define COM_CHANGE_READ_TIME_BLOCK "0x28"
+#define COM_CHANGE_READ_TIME_MEM "0x29"
+#define COM_CHANGE_ERASE_TIME_BLOCK "0x2a"
+#define COM_CHANGE_ERASE_TIME_MEM "0x2b"
+
 /** Příkaz ukončující běh programu. */
 #define COM_STOP "STOP"
 
@@ -165,22 +174,23 @@ typedef struct block_statistics_struct {
     float total_erase_time = 0; /** Celkový čas smazání bloku. */
     int num_of_reads = 0;
     int num_of_writes = 0;
+    int num_of_erases = 0;
 } block_statistics;
 
 typedef struct nand_metadata_struct {
     uuid_t id{}; /** Identifikátor paměti. */
     block_statistics *blocks_stats = nullptr;
     page_statistics *pages_stats = nullptr;
-    int_32 page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
+    size_t page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
     int_32 num_of_pages = 0; /** Počet stránek. */
-    int_32 block_size = DEFAULT_BLOCK_SIZE; /** Velikost bloku. */
+    size_t block_size = DEFAULT_BLOCK_SIZE; /** Velikost bloku. */
     int_32 num_of_blocks = DEFAULT_NUM_OF_BLOCKS; /** Počet bloků. */
-    int_32 mem_size = 0; /** Velikost paměti. */
+    size_t mem_size = 0; /** Velikost paměti. */
     int_32 true_mem_size = 0; /** Počet bytů pameti. */
     int_32 ecc_size = 0; /** Počet bitů ECC kódu. */
-    int_32 md_p_size = 8; /** Celkový počet metadat jedné stránky. */
-    int_32 md_b_size = 8; /** Celkový počet metadat jednoho bloku. */
-    int_32 block_wear_size = 4;
+    size_t md_p_size = 8; /** Celkový počet metadat jedné stránky. */
+    size_t md_b_size = 8; /** Celkový počet metadat jednoho bloku. */
+    size_t block_wear_size = 4;
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     Mem_Type memory_type = DEFAULT_MEM_TYPE; /** Typ paměti - určuje velikost buňky. */
     int_32 mem_time = 0; /** Doba běhu paměti v μs. */
@@ -225,7 +235,7 @@ public:
     /**
      * Přečte obsahe cache paměti.
      */
-    u_char* Read_Cache();
+    u_char* Read_Cache() const;
 
     /**
      * Vrátí základní informace o statusu paměti a operaci.
@@ -245,7 +255,7 @@ public:
     /**
      * Zapíše data do cache.
      */
-    int Write_Cache(const string& data);
+    int Write_Cache(const string& data) const;
 
     /**
      * Přesune data uvnitř paměti.
@@ -268,7 +278,7 @@ public:
 
     int Num_Of_Reads(int_16 addr) const;
 
-    u_char * ECC_Info(int_16 addr);
+    u_char * ECC_Info(int_16 addr) const;
 
     float Read_Time_Last(int_16 addr) const;
 
@@ -294,13 +304,13 @@ public:
 
     int Num_Of_Bad_Pages(int_16 addr) const;
 
-    u_char * ECC_Histogram(int_16 addr);
+    u_char * ECC_Histogram(int_16 addr) const;
 
     int Num_Of_Writes_Page(int_16 addr) const;
 
-    int Num_Of_Reads_Page(int_16 addr);
+    int Num_Of_Reads_Page(int_16 addr) const;
 
-    u_char * Sector_Status_Page(int_16 addr);
+    u_char * Sector_Status_Page(int_16 addr) const;
 
     int Num_Of_Bad_Blocks() const;
 
@@ -311,4 +321,20 @@ public:
     int Num_Of_Writes() const;
 
     int Num_Of_Reads() const;
+
+    int Set_Prog_Time_Page(int_16 addr, float time) const;
+
+    int Set_Prog_Time_Block(int_16 addr, float time) const;
+
+    int Set_Prog_Time_Mem(float time) const;
+
+    int Set_Read_Time_Page(int_16 addr, float time) const;
+
+    int Set_Read_Time_Block(int_16 addr, float time) const;
+
+    int Set_Read_Time_Mem(float time) const;
+
+    int Set_Erase_Time_Block(int_16 addr, float time) const;
+
+    int Set_Erase_Time_Mem(float time) const;
 };

@@ -152,8 +152,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
     string command;
     string args[5] = {};
     int number = 0;
-    float value = 0.0;
-    bool bool_value = true;
+    float value;
+    bool bool_value;
 
     while (true) {
         *input >> command;
@@ -182,6 +182,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     return EXIT_FAILURE;
                 }
                 *output << "Nactena data: " << data << endl;
+                free(data);
 //                    *output << "Cache byla nactena.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
@@ -189,7 +190,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             }
         } else if (command == string(COM_READ_STATUS)) {
             u_char data = flashMemory->Read_Status();
-            *output << "Status paměti byl přečten.\n";
+            *output << "Status pameti je: " << data <<"\n";
         } else if (command == string(COM_READ_ID)) {
             flashMemory->Read_ID();
             *output << "ID zařízení bylo přečteno.\n";
@@ -279,6 +280,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                    free(data);
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
@@ -381,6 +383,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 u_char *data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0]));
                 if (data) {
                     *output << "Doplnit :D.\n";
+                    free(data);
                 } else {
                     *output << "Nepodarilo se provest operaci.\n";
                     return EXIT_FAILURE;
@@ -438,7 +441,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_IS_BAD_BLOCK)) {
             try {
                 *input >> args[0];
-                bool_value = flashMemory->Program_Time_Total((int16_t) stoi(args[0]));
+                bool_value = flashMemory->Is_Bad_Block((int16_t) stoi(args[0]));
                 *output << "Blok na adrese " << args[0] << " je spatny: " << bool_value << endl;
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
@@ -448,7 +451,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_BAD_PAGES)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Erases_Block((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Bad_Pages((int16_t) stoi(args[0]));
                 if (number >= 0) {
                     *output << "Blok na adrese " << args[0] << " ma " << number << "poskozenych stranek.\n";
                 } else {
@@ -469,6 +472,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                    free(data);
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
@@ -511,6 +515,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 u_char *data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0]));
                 if (data) {
                     *output << "Doplnit :D.\n";
+                    free(data);
                 } else {
                     *output << "Nepodarilo se provest operaci.\n";
                     return EXIT_FAILURE;
@@ -557,6 +562,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                    free(data);
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
@@ -591,8 +597,172 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
+        } else if (command == string(COM_CHANGE_PROG_TIME_PAGE)) {
+            try {
+                *input >> args[0];
+                *input >> args[1];
+                if (stof(args[1]) > MAX_PAGE_PROG_TIME || stof(args[1]) < MIN_PAGE_PROG_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_PAGE_PROG_TIME <<
+                            " a " << MAX_PAGE_PROG_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Prog_Time_Page(stoi(args[0]), stof(args[1]))) {
+                    *output << "Podarilo se zmenit cas naprogramovani stranky na adrese " << args[0]
+                    << " na " << args[1] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_CHANGE_PROG_TIME_BLOCK)) {
+            try {
+                *input >> args[0];
+                *input >> args[1];
+                if (stof(args[1]) > MAX_PAGE_PROG_TIME || stof(args[1]) < MIN_PAGE_PROG_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_PAGE_PROG_TIME <<
+                            " a " << MAX_PAGE_PROG_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Prog_Time_Block(stoi(args[0]), stof(args[1]))) {
+                    *output << "Podarilo se zmenit cas naprogramovani bloku na adrese " << args[0]
+                    << " na " << args[1] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_CHANGE_PROG_TIME_MEM)) {
+            try {
+                *input >> args[0];
+                if (stof(args[0]) > MAX_PAGE_PROG_TIME || stof(args[0]) < MIN_PAGE_PROG_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_PAGE_PROG_TIME <<
+                            " a " << MAX_PAGE_PROG_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Prog_Time_Mem(stof(args[0]))) {
+                    *output << "Podarilo se zmenit cas naprogramovani cele pamti na " << args[1] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_CHANGE_READ_TIME_PAGE)) {
+            try {
+                *input >> args[0];
+                *input >> args[1];
+                if (stof(args[1]) > MAX_READ_PAGE_TIME || stof(args[1]) < MIN_READ_PAGE_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_READ_PAGE_TIME <<
+                            " a " << MAX_READ_PAGE_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Read_Time_Page(stoi(args[0]), stof(args[1]))) {
+                    *output << "Podarilo se zmenit cas cteni stranky na adrese " << args[0]
+                            << " na " << args[1] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_CHANGE_READ_TIME_BLOCK)) {
+            try {
+                *input >> args[0];
+                *input >> args[1];
+                if (stof(args[1]) > MAX_READ_PAGE_TIME || stof(args[1]) < MIN_READ_PAGE_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_READ_PAGE_TIME <<
+                            " a " << MAX_READ_PAGE_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Read_Time_Block(stoi(args[0]), stof(args[1]))) {
+                    *output << "Podarilo se zmenit cas cteni bloku na adrese " << args[0]
+                            << " na " << args[1] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_CHANGE_READ_TIME_MEM)) {
+            try {
+                *input >> args[0];
+                if (stof(args[0]) > MAX_READ_PAGE_TIME || stof(args[0]) < MIN_READ_PAGE_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_READ_PAGE_TIME <<
+                            " a " << MAX_READ_PAGE_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Read_Time_Mem(stof(args[0]))) {
+                    *output << "Podarilo se zmenit cas cteni cele pameti na " << args[0] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_CHANGE_ERASE_TIME_BLOCK)) {
+            try {
+                *input >> args[0];
+                *input >> args[1];
+                if (stof(args[1]) > MAX_ERASE_TIME || stof(args[1]) < MIN_ERASE_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME <<
+                            " a " << MAX_ERASE_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Erase_Time_Block(stoi(args[0]), stof(args[1]))) {
+                    *output << "Podarilo se zmenit cas mazani bloku na adrese " << args[0]
+                            << " na " << args[1] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_CHANGE_ERASE_TIME_MEM)) {
+            try {
+                *input >> args[0];
+                if (stof(args[0]) > MAX_ERASE_TIME || stof(args[0]) < MIN_ERASE_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME <<
+                            " a " << MAX_ERASE_TIME << "!\n";
+                    return EXIT_FAILURE;
+                }
+                if (flashMemory->Set_Erase_Time_Mem(stof(args[0]))) {
+                    *output << "Podarilo se zmenit cas naprogramovani cele pameti na " << args[0] << "μs.\n";
+                } else {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Obsah bloku byl vymazán.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
         } else if (command == string(COM_RESET)) {
-            flashMemory->Reset();
+            if (flashMemory->Reset()) {
+                *output << "Pamet byla vyresetovana.\n";
+            }
 //                *output << "Paměť byla vyresetována.\n";
         } else {
             *output << COM_UNKNOWN;
