@@ -318,7 +318,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_READ_TIME_TOTAL)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Read_Time_Last((int16_t) stoi(args[0]));
+                value = flashMemory->Read_Time_Total((int16_t) stoi(args[0]));
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
                 } else {

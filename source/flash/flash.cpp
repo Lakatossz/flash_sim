@@ -272,6 +272,10 @@ int Flash_Memory::Program_Page(int_16 addr)
             m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].page_prog_time;
 
     increase_time(PAGE_PROG_TIME);
+
+    m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].num_of_writes++;
+    m.md.blocks_stats[(addr >> 8)].num_of_writes++;
+    m.md.num_of_writes++;
 }
 
 int Flash_Memory::Write_Cache(const string& data)
@@ -346,6 +350,10 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
 
     increase_time(PAGE_PROG_TIME);
 
+    m.md.pages_stats[(new_addr >> 8) * m.md.num_of_pages + (new_addr & (uint8_t) ~0L)].num_of_writes++;
+    m.md.blocks_stats[(new_addr >> 8)].num_of_writes++;
+    m.md.num_of_writes++;
+
     return EXIT_SUCCESS;
 }
 
@@ -403,26 +411,22 @@ int Flash_Memory::Reset()
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Num_Of_Writes(int_16 addr)
+int Flash_Memory::Num_Of_Writes(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
     }
 
-    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
-
-    return counter_value(&m.data[pointer], 4);
+    return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].num_of_writes;
 }
 
-int Flash_Memory::Num_Of_Reads(int_16 addr)
+int Flash_Memory::Num_Of_Reads(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
     }
 
-    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
-
-    return counter_value(&m.data[pointer], 4);
+    return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].num_of_reads;
 }
 
 u_char * Flash_Memory::ECC_Info(int_16 addr)
@@ -436,7 +440,7 @@ u_char * Flash_Memory::ECC_Info(int_16 addr)
     return eec_value(&m.data[pointer], m.md.ecc_size);
 }
 
-float Flash_Memory::Read_Time_Last(int_16 addr)
+float Flash_Memory::Read_Time_Last(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return 0;
@@ -445,7 +449,7 @@ float Flash_Memory::Read_Time_Last(int_16 addr)
     return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].last_read_page_time;
 }
 
-float Flash_Memory::Program_Time_Last(int_16 addr)
+float Flash_Memory::Program_Time_Last(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return 0;
@@ -454,7 +458,7 @@ float Flash_Memory::Program_Time_Last(int_16 addr)
     return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].last_page_prog_time;
 }
 
-float Flash_Memory::Read_Time_Total(int_16 addr)
+float Flash_Memory::Read_Time_Total(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return 0;
@@ -463,7 +467,7 @@ float Flash_Memory::Read_Time_Total(int_16 addr)
     return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].total_read_page_time;
 }
 
-float Flash_Memory::Program_Time_Total(int_16 addr)
+float Flash_Memory::Program_Time_Total(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return 0;
@@ -472,7 +476,7 @@ float Flash_Memory::Program_Time_Total(int_16 addr)
     return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].total_page_prog_time;
 }
 
-float Flash_Memory::Com_Total_Time(int_16 addr)
+float Flash_Memory::Com_Total_Time(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return 0;
@@ -481,28 +485,30 @@ float Flash_Memory::Com_Total_Time(int_16 addr)
     return m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].com_time;
 }
 
-int Flash_Memory::Num_Of_Erases_Page(int_16 addr)
+int Flash_Memory::Num_Of_Erases_Page(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
     }
+
+    return 1;
 }
 
-u_char * Flash_Memory::Sector_Status_Block(int_16 addr)
+u_char * Flash_Memory::Sector_Status_Block(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return nullptr;
     }
 }
 
-int Flash_Memory::Num_Of_Erases_Block(int_16 addr)
+int Flash_Memory::Num_Of_Erases_Block(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
     }
 }
 
-float Flash_Memory::Erase_Time_Total(int_16 addr)
+float Flash_Memory::Erase_Time_Total(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
@@ -511,23 +517,23 @@ float Flash_Memory::Erase_Time_Total(int_16 addr)
     return m.md.blocks_stats[(addr >> 8)].last_erase_time = m.md.blocks_stats[(addr >> 8)].total_erase_time;
 }
 
-float Flash_Memory::Erase_Time_Last(int_16 addr)
+float Flash_Memory::Erase_Time_Last(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
     }
 
-    return m.md.blocks_stats[(addr >> 8)].last_erase_time = m.md.blocks_stats[(addr >> 8)].last_erase_time;
+    return m.md.blocks_stats[(addr >> 8)].last_erase_time;
 }
 
-bool Flash_Memory::Is_Bad_Block(int_16 addr)
+bool Flash_Memory::Is_Bad_Block(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return false;
     }
 }
 
-int Flash_Memory::Num_Of_Bad_Pages(int_16 addr)
+int Flash_Memory::Num_Of_Bad_Pages(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
@@ -541,11 +547,13 @@ u_char * Flash_Memory::ECC_Histogram(int_16 addr)
     }
 }
 
-int Flash_Memory::Num_Of_Writes_Page(int_16 addr)
+int Flash_Memory::Num_Of_Writes_Page(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return -1;
     }
+
+    return m.md.blocks_stats[(addr >> 8)].num_of_writes;
 }
 
 int Flash_Memory::Num_Of_Reads_Page(int_16 addr)
@@ -553,6 +561,8 @@ int Flash_Memory::Num_Of_Reads_Page(int_16 addr)
     if (!check_address(m, addr)) {
         return -1;
     }
+
+    return m.md.blocks_stats[(addr >> 8)].num_of_reads;
 }
 
 u_char * Flash_Memory::Sector_Status_Page(int_16 addr)
@@ -562,14 +572,14 @@ u_char * Flash_Memory::Sector_Status_Page(int_16 addr)
     }
 }
 
-int Flash_Memory::Num_Of_Bad_Blocks()
+int Flash_Memory::Num_Of_Bad_Blocks() const
 {
-
+    return m.md.num_of_bad_blocks;
 }
 
-int Flash_Memory::Num_Of_Bad_Pages()
+int Flash_Memory::Num_Of_Bad_Pages() const
 {
-
+    return m.md.num_of_bad_pages;
 }
 
 u_char * Flash_Memory::ECC_Histogram()
@@ -577,12 +587,12 @@ u_char * Flash_Memory::ECC_Histogram()
 
 }
 
-int Flash_Memory::Num_Of_Writes()
+int Flash_Memory::Num_Of_Writes() const
 {
-
+    return m.md.num_of_writes;
 }
 
-int Flash_Memory::Num_Of_Reads()
+int Flash_Memory::Num_Of_Reads() const
 {
     return m.md.num_of_reads;
 }

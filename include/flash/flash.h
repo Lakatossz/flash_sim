@@ -155,14 +155,16 @@ typedef struct page_statistics_struct {
     float total_read_page_time = 0; /** Celkový čas čtení stránky. */
     float total_page_prog_time = 0; /** Celkový čas naprogramování stránky. */
     float com_time;
-    int_32 num_of_reads = 0;
+    int num_of_reads = 0;
+    int num_of_writes = 0;
 } page_statistics;
 
 typedef struct block_statistics_struct {
     float erase_time = DEFAULT_ERASE_TIME; /** Čas smazání bloku. */
     float last_erase_time = 0; /** Poslední čas smazání bloku. */
     float total_erase_time = 0; /** Celkový čas smazání bloku. */
-    int_32 num_of_reads = 0;
+    int num_of_reads = 0;
+    int num_of_writes = 0;
 } block_statistics;
 
 typedef struct nand_metadata_struct {
@@ -182,7 +184,10 @@ typedef struct nand_metadata_struct {
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     Mem_Type memory_type = DEFAULT_MEM_TYPE; /** Typ paměti - určuje velikost buňky. */
     int_32 mem_time = 0; /** Doba běhu paměti v μs. */
-    int_32 num_of_reads = 0;
+    int num_of_reads = 0;
+    int num_of_writes = 0;
+    int num_of_bad_blocks = 0;
+    int num_of_bad_pages = 0;
 } nand_metadata;
 
 /**
@@ -259,51 +264,51 @@ public:
      */
     int Reset();
 
-    int Num_Of_Writes(int_16 addr);
+    int Num_Of_Writes(int_16 addr) const;
 
-    int Num_Of_Reads(int_16 addr);
+    int Num_Of_Reads(int_16 addr) const;
 
     u_char * ECC_Info(int_16 addr);
 
-    float Read_Time_Last(int_16 addr);
+    float Read_Time_Last(int_16 addr) const;
 
-    float Program_Time_Last(int_16 addr);
+    float Program_Time_Last(int_16 addr) const;
 
-    float Read_Time_Total(int_16 addr);
+    float Read_Time_Total(int_16 addr) const;
 
-    float Program_Time_Total(int_16 addr);
+    float Program_Time_Total(int_16 addr) const;
 
-    float Com_Total_Time(int_16 addr);
+    float Com_Total_Time(int_16 addr) const;
 
-    int Num_Of_Erases_Page(int_16 addr);
+    int Num_Of_Erases_Page(int_16 addr) const;
 
-    u_char * Sector_Status_Block(int_16 addr);
+    u_char * Sector_Status_Block(int_16 addr) const;
 
-    int Num_Of_Erases_Block(int_16 addr);
+    int Num_Of_Erases_Block(int_16 addr) const;
 
-    float Erase_Time_Total(int_16 addr);
+    float Erase_Time_Total(int_16 addr) const;
 
-    float Erase_Time_Last(int_16 addr);
+    float Erase_Time_Last(int_16 addr) const;
 
-    bool Is_Bad_Block(int_16 addr);
+    bool Is_Bad_Block(int_16 addr) const;
 
-    int Num_Of_Bad_Pages(int_16 addr);
+    int Num_Of_Bad_Pages(int_16 addr) const;
 
     u_char * ECC_Histogram(int_16 addr);
 
-    int Num_Of_Writes_Page(int_16 addr);
+    int Num_Of_Writes_Page(int_16 addr) const;
 
     int Num_Of_Reads_Page(int_16 addr);
 
     u_char * Sector_Status_Page(int_16 addr);
 
-    int Num_Of_Bad_Blocks();
+    int Num_Of_Bad_Blocks() const;
 
-    int Num_Of_Bad_Pages();
+    int Num_Of_Bad_Pages() const;
 
     u_char * ECC_Histogram();
 
-    int Num_Of_Writes();
+    int Num_Of_Writes() const;
 
-    int Num_Of_Reads();
+    int Num_Of_Reads() const;
 };
