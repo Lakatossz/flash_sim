@@ -34,7 +34,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
     float read_page_time = DEFAULT_READ_PAGE_TIME;
     float page_prog_time = DEFAULT_PAGE_PROG_TIME;
     float erase_time = DEFAULT_ERASE_TIME;
-    Mem_Type type = DEFAULT_MEM_TYPE;
+    NMem_Type type = DEFAULT_MEM_TYPE;
     string type_s = "slc";
 
     /**
@@ -113,13 +113,13 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
         } else if (strcmp(argv[i], PARAM_MEM_TYPE) == 0) {
             type_s = string(argv[i + 1]);
             if (strcmp(argv[i + 1], MEM_TYPE_SLC) == 0) {
-                type = SLC;
+                type = NMem_Type::SLC;
             } else if (strcmp(argv[i + 1], MEM_TYPE_MLC) == 0) {
-                type = MLC;
+                type = NMem_Type::MLC;
             } else if (strcmp(argv[i + 1], MEM_TYPE_TLC) == 0) {
-                type = TLC;
+                type = NMem_Type::TLC;
             } else if (strcmp(argv[i + 1], MEM_TYPE_QLC) == 0) {
-                type = QLC;
+                type = NMem_Type::QLC;
             } else {
                 *output << "Spatny parametr typu pameti. Povolene jsou (slc, mlc, tlc, qlc)!\n";
                 return nullptr;

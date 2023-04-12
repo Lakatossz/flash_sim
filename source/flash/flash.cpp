@@ -30,13 +30,13 @@ int_32 counter_value(const u_char *counter, size_t size) {
  *
  * @param time_type
  */
-void increase_time(Time_Type type) {
-    if (type == READ_PAGE_TIME) {
-
-    } else if (type == PAGE_PROG_TIME) {
-
-    } else if (type == ERASE_TIME) {
-
+void increase_time(NTime_Type type) {
+    if (type == NTime_Type::READ_PAGE_TIME) {
+        return;
+    } else if (type == NTime_Type::PAGE_PROG_TIME) {
+        return;
+    } else if (type == NTime_Type::ERASE_TIME) {
+        return;
     }
 }
 
@@ -95,7 +95,7 @@ Flash_Memory::Flash_Memory()
         m.md.blocks_stats[i].num_of_reads = 0;
     }
 }
-Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, Mem_Type memory_type,
+Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, NMem_Type memory_type,
                            float read_page_time, float page_prog_time, float erase_time)
 {
     m.md.page_size = page_size;
@@ -198,7 +198,7 @@ int Flash_Memory::Read_Page(int_16 addr)
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
-    if (m.data[pointer + 1] >> BLOCK_BAD == 1) {
+    if ((m.data[pointer + 1] >> BLOCK_BAD) == 1) {
         cout << "Blok je již požkozený.\n";
         m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
@@ -219,6 +219,11 @@ int Flash_Memory::Read_Page(int_16 addr)
     m.md.num_of_reads++;
 
     return EXIT_SUCCESS;
+}
+
+int Flash_Memory::Read_Sector(int_16 addr)
+{
+    // TODO - doimplementovat
 }
 
 u_char* Flash_Memory::Read_Cache() const
@@ -280,6 +285,11 @@ int Flash_Memory::Program_Page(int_16 addr)
     m.md.num_of_writes++;
 
     return EXIT_SUCCESS;
+}
+
+int Flash_Memory::Program_Sector(int_16 addr)
+{
+    // TODO - doimplementovat
 }
 
 int Flash_Memory::Write_Cache(const string& data) const
@@ -449,6 +459,8 @@ u_char * Flash_Memory::ECC_Info(int_16 addr) const
         return nullptr;
     }
 
+    // TODO - doimplementovat
+
     int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
     auto *ecc_data = (u_char *) malloc(sizeof(u_char) * m.md.ecc_size);
@@ -522,7 +534,7 @@ u_char * Flash_Memory::Sector_Status_Block(int_16 addr) const
         return nullptr;
     }
 
-
+    // TODO - doimplementovat
 }
 
 int Flash_Memory::Num_Of_Erases_Block(int_16 addr) const
@@ -557,6 +569,8 @@ bool Flash_Memory::Is_Bad_Block(int_16 addr) const
     if (!check_address(m, addr)) {
         return false;
     }
+
+    // TODO - doimplementovat
 }
 
 int Flash_Memory::Num_Of_Bad_Pages(int_16 addr) const
@@ -564,6 +578,8 @@ int Flash_Memory::Num_Of_Bad_Pages(int_16 addr) const
     if (!check_address(m, addr)) {
         return -1;
     }
+
+    // TODO - doimplementovat
 }
 
 u_char * Flash_Memory::ECC_Histogram(int_16 addr) const
@@ -571,6 +587,8 @@ u_char * Flash_Memory::ECC_Histogram(int_16 addr) const
     if (!check_address(m, addr)) {
         return nullptr;
     }
+
+    // TODO - doimplementovat
 }
 
 int Flash_Memory::Num_Of_Writes_Page(int_16 addr) const
@@ -596,6 +614,8 @@ u_char * Flash_Memory::Sector_Status_Page(int_16 addr) const
     if (!check_address(m, addr)) {
         return nullptr;
     }
+
+    // TODO - doimplementovat
 }
 
 int Flash_Memory::Num_Of_Bad_Blocks() const
@@ -610,7 +630,7 @@ int Flash_Memory::Num_Of_Bad_Pages() const
 
 u_char * Flash_Memory::ECC_Histogram()
 {
-
+    // TODO - doimplementovat
 }
 
 int Flash_Memory::Num_Of_Writes() const
