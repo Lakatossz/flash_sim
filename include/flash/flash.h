@@ -5,6 +5,10 @@
 #include <fstream>
 #include <cstdlib>
 #include <uuid/uuid.h>
+#include <list>
+#include "flash/statistics/Page_Stats.h"
+#include "flash/statistics/Block_Stats.h"
+#include "flash/statistics/Memory_Stats.h"
 
 typedef u_int32_t int_32;
 typedef u_int8_t int_8;
@@ -121,13 +125,13 @@ using namespace std;
 #define DEFAULT_PAGE_SIZE 512
 #define DEFAULT_BLOCK_SIZE 8192
 #define DEFAULT_NUM_OF_BLOCKS 16
-#define DEFAULT_READ_PAGE_TIME 10
-#define DEFAULT_PAGE_PROG_TIME 15
-#define DEFAULT_ERASE_TIME 30
+//#define DEFAULT_READ_PAGE_TIME 10
+//#define DEFAULT_PAGE_PROG_TIME 15
+//#define DEFAULT_ERASE_TIME 30
 #define DEFAULT_MEM_TYPE NMem_Type::SLC
 
 /**
- * Definice výštového typu představující typ buňky paměti.
+ * Definice výčtového typu představující typ buňky paměti.
  * Do budoucna by mohl určovat poruchovost, chybovost, životnost.
  */
 enum class NMem_Type {
@@ -135,6 +139,15 @@ enum class NMem_Type {
     MLC = 2,
     TLC = 3,
     QLC = 4,
+};
+
+/**
+ * Definice výčtového typu pro algortimy výpočtu času.
+ */
+enum NTime_Type {
+    READ_PAGE_TIME = 1,
+    PAGE_PROG_TIME = 2,
+    ERASE_TIME = 3,
 };
 
 typedef enum Block_Metadata_Struct {
@@ -150,40 +163,10 @@ typedef enum Page_Metadata_Enum {
     PAGE_WRITE_NUM = 16,
 } Page_Metadata;
 
-/**
- *
- */
-enum NTime_Type {
-    READ_PAGE_TIME,
-    PAGE_PROG_TIME,
-    ERASE_TIME,
-};
-
-typedef struct page_statistics_struct {
-    float read_page_time = DEFAULT_READ_PAGE_TIME; /** Čas čtení stránky. */
-    float page_prog_time = DEFAULT_PAGE_PROG_TIME; /** Čas naprogramování stránky. */
-    float last_read_page_time = 0; /** Poslední čas čtení stránky. */
-    float last_page_prog_time = 0; /** Poslední čas naprogramování stránky. */
-    float total_read_page_time = 0; /** Celkový čas čtení stránky. */
-    float total_page_prog_time = 0; /** Celkový čas naprogramování stránky. */
-    float com_time = 0.0; /** TODO - Co je toto? */
-    int num_of_reads = 0; /** Počet čtení stránky. */
-    int num_of_writes = 0; /** Počet zápisů stránky. */
-} page_statistics;
-
-typedef struct block_statistics_struct {
-    float erase_time = DEFAULT_ERASE_TIME; /** Čas smazání bloku. */
-    float last_erase_time = 0; /** Poslední čas smazání bloku. */
-    float total_erase_time = 0; /** Celkový čas smazání bloku. */
-    int num_of_reads = 0; /** Počet přečtených stránek v bloku. */
-    int num_of_writes = 0; /** Počet zapsaných stránek v bloku. */
-    int num_of_erases = 0; /** Počet smazání bloku. */
-} block_statistics;
-
 typedef struct nand_metadata_struct {
     uuid_t id{}; /** Identifikátor paměti. */
-    block_statistics *blocks_stats = nullptr; /** Pole statistik bloků. */
-    page_statistics *pages_stats = nullptr; /** Pole statistik stránek. */
+    Block_Stats *blocks_stats = nullptr; /** Pole statistik bloků. */
+    Page_Stats *pages_stats = nullptr; /** Pole statistik stránek. */
     size_t page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
     int_32 num_of_pages = 0; /** Počet stránek. */
     size_t block_size = DEFAULT_BLOCK_SIZE; /** Velikost bloku. */
@@ -197,8 +180,7 @@ typedef struct nand_metadata_struct {
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     NMem_Type memory_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
     int_32 mem_time = 0; /** Doba běhu paměti v μs. */
-    int num_of_reads = 0; /** Počet přečtených stránek v paměti. */
-    int num_of_writes = 0; /** Počet zapsaných stránek v paměti. */
+    Memory_Stats *memory_stats = new Memory_Stats();
     int num_of_bad_blocks = 0; /** Počet poškozených bloků v paměti. */
     int num_of_bad_pages = 0; /** Počet poškozených stránek v paměti. */
 } nand_metadata;
