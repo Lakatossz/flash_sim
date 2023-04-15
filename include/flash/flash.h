@@ -58,10 +58,12 @@ using namespace std;
 /**
  * Definové kódy příkazů.
  */
-#define COM_READ_PAGE "0x03"
-#define COM_READ_STATUS "0x04"
-#define COM_READ_ID "0x05"
-#define COM_PROGRAM_PAGE "0x06"
+#define COM_READ_PAGE "0x01"
+#define COM_READ_SECTOR "0x02"
+#define COM_READ_STATUS "0x03"
+#define COM_READ_ID "0x04"
+#define COM_PROGRAM_PAGE "0x05"
+#define COM_PROGRAM_SECTOR "0x06"
 #define COM_PROGRAM_DATA_MOVE "0x07"
 #define COM_BLOCK_ERASE "0x08"
 #define COM_RESET "0x09"
@@ -122,6 +124,8 @@ using namespace std;
 /**
  * Defaultní hodnoty parametrů.
  */
+ /* Sector - minimální jednotka dat */
+#define DEFAULT_SECTOR_SIZE 512
 #define DEFAULT_PAGE_SIZE 512
 #define DEFAULT_BLOCK_SIZE 8192
 #define DEFAULT_NUM_OF_BLOCKS 16
@@ -150,39 +154,42 @@ enum NTime_Type {
     ERASE_TIME = 3,
 };
 
-typedef enum Block_Metadata_Struct {
+/*typedef enum Block_Metadata_Struct { // 8 + 32 + 16?
     BLOCK_VALID = 0,
     BLOCK_BAD = 1,
-    BLOCK_WEAR = 2,
-    BLOCK_BAD_PAGES = 16,
+    BLOCK_WEAR = 2, // 32
+    BLOCK_BAD_PAGES = 16, // 16
 } Block_Metadata;
 
-typedef enum Page_Metadata_Enum {
+typedef enum Page_Metadata_Enum { // 8 + 16
     PAGE_VALID = 0,
-    PAGE_ECC = 1,
-    PAGE_WRITE_NUM = 16,
-} Page_Metadata;
+    PAGE_ECC = 1, // 16 bitů
+    PAGE_WRITE_NUM = 16, //
+} Page_Metadata;*/
 
 typedef struct nand_metadata_struct {
+    // Statické parametry paměti.
     uuid_t id{}; /** Identifikátor paměti. */
-    Block_Stats *blocks_stats = nullptr; /** Pole statistik bloků. */
-    Page_Stats *pages_stats = nullptr; /** Pole statistik stránek. */
     size_t page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
     int_32 num_of_pages = 0; /** Počet stránek. */
     size_t block_size = DEFAULT_BLOCK_SIZE; /** Velikost bloku. */
     int_32 num_of_blocks = DEFAULT_NUM_OF_BLOCKS; /** Počet bloků. */
     size_t mem_size = 0; /** Velikost paměti. */
     int_32 true_mem_size = 0; /** Počet bytů pameti. */
-    int_32 ecc_size = 0; /** Počet bitů ECC kódu. */
-    size_t md_p_size = 8; /** Celkový počet metadat jedné stránky. */
-    size_t md_b_size = 8; /** Celkový počet metadat jednoho bloku. */
-    size_t block_wear_size = 4; /** Velikost bytů pro pole počítadla wear-levelingu. */
+    int_32 ecc_size = 16; /** Počet bitů ECC kódu. */
+    size_t md_p_size = 3; /** Celkový počet metadat jedné stránky. */
+    size_t md_b_size = 5; /** Celkový počet metadat jednoho bloku. */
+    size_t block_wear_size = 32; /** Velikost bitů pro pole počítadla wear-levelingu. */
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     NMem_Type memory_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
+
+    // Dynamické parametry paměti.
     int_32 mem_time = 0; /** Doba běhu paměti v μs. */
     Memory_Stats *memory_stats = new Memory_Stats();
     int num_of_bad_blocks = 0; /** Počet poškozených bloků v paměti. */
     int num_of_bad_pages = 0; /** Počet poškozených stránek v paměti. */
+    Block_Stats *blocks_stats = nullptr; /** Pole statistik bloků. */
+    Page_Stats *pages_stats = nullptr; /** Pole statistik stránek. */
 } nand_metadata;
 
 /**
@@ -194,6 +201,9 @@ typedef struct nand_memory_struct {
     u_char *mem_cache = nullptr; /** Cache paměti. */
 } nand_memory;
 
+/**
+ * Definice třídy představijící flash paměť.
+ */
 class Flash_Memory {
 
 public:
@@ -202,14 +212,36 @@ public:
 
 public:
 
+    /**
+     * Vytvoří defaultní paměť.
+     */
     Flash_Memory();
 
-    Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, NMem_Type memory_type,
-                 float read_page_time, float page_prog_time, float erase_time);
+    /**
+     * Vytvoří paměť s parametry danými vstupem programu.
+     */
+    Flash_Memory(int_32 page_size,
+                 int_32 block_size,
+                 int_32 number_of_blocks,
+                 NMem_Type memory_type,
+                 float read_page_time,
+                 float page_prog_time,
+                 float erase_time);
 
+    /**
+     * Uvolní všechnu alokovanou paměť.
+     */
     ~Flash_Memory();
 
-    int Init();
+    /**
+     * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
+     */
+    int Flash_Init();
+
+    /**
+     * Připraví blok cache k použití.
+     */
+    int Cache_Init();
 
     /**
      * Vrátí data obsažené ve zvolené stránce do cache.
@@ -217,7 +249,7 @@ public:
     int Read_Page(int_16 addr);
 
     /**
-     * Vrátí data obsažené ve zvoleném sektoru do cache.
+     * Přečte sector o velikosti 512B na dané adrese do cache.
      */
     int Read_Sector(int_16 addr);
 
@@ -242,10 +274,9 @@ public:
     int Program_Page(int_16 addr);
 
     /**
-     * Nastaví data sektoru daným adresou obsahem cache.
+     * Zapíše data do sectoru o velikosti 512B obsahem cache.
      */
     int Program_Sector(int_16 addr);
-
 
     /**
      * Zapíše data do cache.
@@ -259,13 +290,13 @@ public:
 
     /**
      * Vymaže blok na dane adrese.
-     * @param block_address Adresa bloku (Měla by být uvedena v LUN).
      * Adresa ve formatu 16bit čísla: ||-|-|-|-|-Blok-|-|-|-|-|-|-|-Adresa-|-|-|-|-||
      */
     int Block_Erase(int_8 block_address);
 
     /**
      * Uvede paměť do původního stavu - paměť je prázdná.
+     * Všechna data uvnitř paměti budou ztracena.
      */
     int Reset();
 
@@ -335,7 +366,7 @@ public:
     float Erase_Time_Last(int_16 addr) const;
 
     /**
-     * Vrátí jestli je blok na dané adrese poškozený.
+     * Může být použit pro zjištění, zda-li je blok použitelný.
      */
     bool Is_Bad_Block(int_16 addr) const;
 
@@ -347,7 +378,7 @@ public:
     /**
      * Histogram pro ECC všech stránek v bloku na dané adrese.
      */
-    u_char * ECC_Histogram(int_16 addr) const;
+    string ECC_Histogram(int_16 addr) const;
 
     /**
      * Vrátí počet zápisů do stránek v bloku na dané adrese.
@@ -377,7 +408,7 @@ public:
     /**
      * Vrátí ECC histrogram ze všech stránek v paměti.
      */
-    u_char * ECC_Histogram();
+    string ECC_Histogram();
 
     /**
      * Vrátí počet zápisů do paměti.

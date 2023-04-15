@@ -173,6 +173,18 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
+        } else if (command == string(COM_READ_SECTOR)) {
+            try {
+                *input >> args[0];
+                if (!flashMemory->Read_Sector((int16_t) stoi(args[0]))) {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+//                    *output << "Sector byl nacten.\n";
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
         } else if (command == string(COM_READ_CACHE)) {
             try {
                 *input >> args[0];
@@ -199,6 +211,18 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *input >> args[0];
                 *output << "adresa: " << args[0] << endl;
                 if (flashMemory->Program_Page((int16_t) stoi(args[0]))) {
+                    *output << "Nepodarilo se provest operaci.\n";
+                    return EXIT_FAILURE;
+                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo! " << "\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_PROGRAM_SECTOR)) {
+            try {
+                *input >> args[0];
+                *output << "adresa: " << args[0] << endl;
+                if (flashMemory->Program_Sector((int16_t) stoi(args[0]))) {
                     *output << "Nepodarilo se provest operaci.\n";
                     return EXIT_FAILURE;
                 }
@@ -813,7 +837,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    flashMemory->Init();
+    flashMemory->Flash_Init();
+    flashMemory->Cache_Init();
     *output << "Pamet byla incializovana a je pripravena k pouziti!" << endl;
 
     *output << "=================================================================" << endl;

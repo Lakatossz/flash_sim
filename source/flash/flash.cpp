@@ -59,12 +59,6 @@ int check_address(nand_memory m, int_16 addr) {
 
 Flash_Memory::Flash_Memory()
 {
-    m.mem_cache = (u_char *) malloc(sizeof(u_char) * m.md.page_size);
-    if (!m.mem_cache) {
-        cout << "Není dostatek paměti.\n";
-        return;
-    }
-
     m.md.pages_stats = (Page_Stats *) malloc(sizeof(Page_Stats) * m.md.num_of_pages * m.md.num_of_blocks);
     if (!m.md.pages_stats) {
         cout << "Není dostatek paměti.\n";
@@ -92,12 +86,6 @@ Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of
     m.md.block_size = block_size;
     m.md.num_of_blocks = number_of_blocks;
     m.md.memory_type = memory_type;
-
-    m.mem_cache = (u_char *) malloc(sizeof(u_char) * m.md.page_size);
-    if (!m.mem_cache) {
-        cout << "Není dostatek paměti.\n";
-        return;
-    }
 
     free(m.md.pages_stats);
     m.md.pages_stats = (Page_Stats *) malloc(sizeof(Page_Stats) * m.md.num_of_pages * m.md.num_of_blocks);
@@ -134,7 +122,7 @@ Flash_Memory::~Flash_Memory()
     free(m.md.blocks_stats);
 }
 
-int Flash_Memory::Init()
+int Flash_Memory::Flash_Init()
 {
     /** Pocet stranek uvnitr bloku. */
     m.md.num_of_pages = m.md.block_size / m.md.page_size;
@@ -164,6 +152,17 @@ int Flash_Memory::Init()
     return EXIT_SUCCESS;
 }
 
+int Flash_Memory::Cache_Init() {
+
+    m.mem_cache = (u_char *) malloc(sizeof(u_char) * m.md.page_size);
+    if (!m.mem_cache) {
+        cout << "Není dostatek paměti.\n";
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int Flash_Memory::Read_Page(int_16 addr)
 {
     if (!check_address(m, addr)) {
@@ -176,14 +175,14 @@ int Flash_Memory::Read_Page(int_16 addr)
 //    m.md.status = m.md.status | (1 << 5)
 
     /** Kontrola validace stránky - jestli je použitelná. */
-    if (m.data[pointer + m.md.page_size] >> PAGE_VALID == 1) {
+    if (m.data[pointer + m.md.page_size] >> 0 == 1) {
         cout << "Stranka neni validni.\n";
         return EXIT_FAILURE;
     }
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
-    if ((m.data[pointer + 1] >> BLOCK_BAD) == 1) {
+    if ((m.data[pointer + 1] >> 1) == 1) {
         cout << "Blok je již požkozený.\n";
         m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
@@ -210,7 +209,46 @@ int Flash_Memory::Read_Page(int_16 addr)
 
 int Flash_Memory::Read_Sector(int_16 addr)
 {
-    // TODO - doimplementovat
+    if (!check_address(m, addr)) {
+        cout << "Adresu nelze pouzit.\n";
+        return EXIT_FAILURE;
+    }
+
+    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+
+//    m.md.status = m.md.status | (1 << 5)
+
+    /** Kontrola validace stránky - jestli je použitelná. */
+    if (m.data[pointer + m.md.page_size] >> 0 == 1) {
+        cout << "Stranka neni validni.\n";
+        return EXIT_FAILURE;
+    }
+
+    /** Zkontroluju, jestli je možné stránku ještě smazat. */
+    /** cislo bloku + cislo stranky + 5. pozice znaku */
+    if ((m.data[pointer + 1] >> 1) == 1) {
+        cout << "Blok je již požkozený.\n";
+        m.md.status = m.md.status | (1 << 5);
+        return EXIT_FAILURE;
+    }
+
+    memcpy(m.mem_cache, &m.data[pointer], DEFAULT_SECTOR_SIZE);
+
+    size_t page_stats_pointer = (addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L);
+
+    /** Aktualizace času běhu. */
+    m.md.pages_stats[page_stats_pointer]
+            .addTotalReadPageTime(m.md.pages_stats[page_stats_pointer].getReadPageTime());
+
+    m.md.pages_stats[page_stats_pointer]
+            .setLastReadPageTime(m.md.pages_stats[page_stats_pointer].getReadPageTime());
+    increase_time(READ_PAGE_TIME);
+
+    m.md.pages_stats[page_stats_pointer].addNumOfReads(1);
+    m.md.blocks_stats[(addr >> 8)].addNumOfReads(1);
+    m.md.memory_stats->addNumOfReads(1);
+
+    return EXIT_SUCCESS;
 }
 
 u_char* Flash_Memory::Read_Cache() const
@@ -244,13 +282,13 @@ int Flash_Memory::Program_Page(int_16 addr)
     int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
     /** Kontrola validace stránky - jestli je použitelná. */
-    if (m.data[pointer + m.md.page_size] >> PAGE_VALID == 1) {
+    if (m.data[pointer + m.md.page_size] >> 0 == 1) {
         return EXIT_FAILURE;
     }
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
-    if (m.data[pointer + 1] >> BLOCK_BAD == 1) {
+    if (m.data[pointer + 1] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
         m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
@@ -278,7 +316,42 @@ int Flash_Memory::Program_Page(int_16 addr)
 
 int Flash_Memory::Program_Sector(int_16 addr)
 {
-    // TODO - doimplementovat
+    if (!check_address(m, addr))
+        return EXIT_FAILURE;
+
+    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+
+    /** Kontrola validace stránky - jestli je použitelná. */
+    if (m.data[pointer + m.md.page_size] >> 0 == 1) {
+        return EXIT_FAILURE;
+    }
+
+    /** Zkontroluju, jestli je možné stránku ještě smazat. */
+    /** cislo bloku + cislo stranky + 5. pozice znaku */
+    if (m.data[pointer + 1] >> 1 == 1) {
+        cout << "Blok je již požkozený.\n";
+        m.md.status = m.md.status | (1 << 5);
+        return EXIT_FAILURE;
+    }
+
+    memcpy(&m.data[pointer], m.mem_cache, DEFAULT_SECTOR_SIZE);
+
+    size_t page_stats_pointer = (addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L);
+
+    /** Aktualizace času běhu. */
+    m.md.pages_stats[page_stats_pointer]
+            .addTotalPageProgTime(m.md.pages_stats[page_stats_pointer].getPageProgTime());
+
+    m.md.pages_stats[page_stats_pointer]
+            .setLastPageProgTime(m.md.pages_stats[page_stats_pointer].getPageProgTime());
+
+    increase_time(PAGE_PROG_TIME);
+
+    m.md.pages_stats[page_stats_pointer].addNumOfWrites(1);
+    m.md.blocks_stats[(addr >> 8)].addNumOfWrites(1);
+    m.md.memory_stats->addNumOfWrites(1);
+
+    return EXIT_SUCCESS;
 }
 
 int Flash_Memory::Write_Cache(const string& data) const
@@ -302,13 +375,13 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     int_32 old_pointer = old_addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
     /** Kontrola validace stránky - jestli je použitelná. */
-    if (m.data[old_pointer + m.md.page_size] >> PAGE_VALID == 1) {
+    if (m.data[old_pointer + m.md.page_size] >> 0 == 1) {
         return EXIT_FAILURE;
     }
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
-    if (m.data[old_pointer + 1] >> BLOCK_BAD == 1) {
+    if (m.data[old_pointer + 1] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
         m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
@@ -331,13 +404,13 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     int_32 new_pointer = old_addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
     /** Kontrola validace stránky - jestli je použitelná. */
-    if (m.data[new_pointer + m.md.page_size] >> PAGE_VALID == 1) {
+    if (m.data[new_pointer + m.md.page_size] >> 0 == 1) {
         return EXIT_FAILURE;
     }
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
-    if (m.data[new_pointer + 1] >> BLOCK_BAD == 1) {
+    if (m.data[new_pointer + 1] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
         m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
@@ -377,7 +450,7 @@ int Flash_Memory::Block_Erase(int_8 addr)
 
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
-    if (m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] >> BLOCK_BAD == 1) {
+    if (m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
         m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
@@ -386,14 +459,14 @@ int Flash_Memory::Block_Erase(int_8 addr)
     /** Smazání bloku. */
     memset(&m.data[pointer],0L,m.md.page_size);
     increase_counter(
-            &m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size + BLOCK_WEAR],
+            &m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size + 2],
             m.md.block_wear_size);
 
     if (counter_value(
-            &m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] + BLOCK_WEAR,
+            &m.data[pointer + m.md.block_size + m.md.num_of_pages * m.md.md_p_size] + 1,
             m.md.block_wear_size) == MAX_ERASE_NUMBER) {
         m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size]
-        = m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] | (1 << BLOCK_BAD);
+        = m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] | (1 << 1);
     }
 
     /** Aktualizace času běhu. */
@@ -572,13 +645,15 @@ int Flash_Memory::Num_Of_Bad_Pages(int_16 addr) const
     // TODO - doimplementovat
 }
 
-u_char * Flash_Memory::ECC_Histogram(int_16 addr) const
+string Flash_Memory::ECC_Histogram(int_16 addr) const
 {
     if (!check_address(m, addr)) {
         return nullptr;
     }
 
     // TODO - doimplementovat
+
+    return string("neco");
 }
 
 int Flash_Memory::Num_Of_Writes_Page(int_16 addr) const
@@ -618,9 +693,67 @@ int Flash_Memory::Num_Of_Bad_Pages() const
     return m.md.num_of_bad_pages;
 }
 
-u_char * Flash_Memory::ECC_Histogram()
+string Flash_Memory::ECC_Histogram()
 {
-    // TODO - doimplementovat
+//        sort(&array[0], &array[n]);
+//        int index = 0, k = n, reduce = 1;
+//        double min = array[0], max = array[n - 1];
+//        if (k > 10)
+//            k = 50;
+//
+//        auto delta = (double) ((max - min) / k);
+//
+//        int *counted = (int *) malloc(sizeof(int) * k);
+//        if (!counted) {
+//            cout << "Neni dostatek pameti!\n";
+//            return;
+//        }
+//
+//
+//        if (n >= 2500) {
+//            reduce = 2;
+//            if (n >= 5000) {
+//                reduce = 5;
+//                if (n >= 10000) {
+//                    reduce = 10;
+//                    if (n >= 25000) {
+//                        reduce = 20;
+//                        if (n >= 50000) {
+//                            reduce = 50;
+//                            if (n >= 100000) {
+//                                reduce = 100;
+//                                if (n >= 250000) {
+//                                    reduce = 200;
+//                                    if (n >= 500000) {
+//                                        reduce = 500;
+//                                        if (n >= 1000000) {
+//                                            reduce = 1000;
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//
+//        for (int i = 0; i < k; ++i) {
+//            while (array[index] >= (array[0] + (i * delta)) && array[index] <= (array[0] + (i + 1) * delta)) {
+//                ++counted[i];
+//                index++;
+//            }
+//        }
+//
+//        for (int i = 0; i < k; ++i) {
+//            cout << setw(8) << setprecision(3) << (array[0] + (i * delta))<< ": ";
+//            for (int j = 0; j < counted[i] / reduce; ++j) {
+//                cout << "*";
+//            }
+//            cout << endl;
+//        }
+//    }
 }
 
 int Flash_Memory::Num_Of_Writes() const
