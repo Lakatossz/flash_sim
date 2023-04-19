@@ -165,7 +165,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             try {
                 *input >> args[0];
                 if (!flashMemory->Read_Page((int16_t) stoi(args[0]))) {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci cteni stranky.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Stranka byla nactena.\n";
@@ -177,7 +177,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             try {
                 *input >> args[0];
                 if (!flashMemory->Read_Sector((int16_t) stoi(args[0]))) {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci cteni sektoru.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Sector byl nacten.\n";
@@ -190,7 +190,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *input >> args[0];
                 u_char *data = flashMemory->Read_Cache();
                 if (!data) {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci cteni cache.\n";
                     return EXIT_FAILURE;
                 }
                 *output << "Nactena data: " << data << endl;
@@ -211,7 +211,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *input >> args[0];
                 *output << "adresa: " << args[0] << endl;
                 if (flashMemory->Program_Page((int16_t) stoi(args[0]))) {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci cteni statusu.\n";
                     return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
@@ -223,7 +223,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *input >> args[0];
                 *output << "adresa: " << args[0] << endl;
                 if (flashMemory->Program_Sector((int16_t) stoi(args[0]))) {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zapsani sektoru.\n";
                     return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
@@ -245,7 +245,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *output << "nova adresa: " << args[1] << endl;
                 if (flashMemory->
                 Program_Data_Move((int16_t) stoi(args[0]), (int16_t) stoi(args[1]))) {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci presunuti dat.\n";
                     return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
@@ -257,7 +257,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             try {
                 *input >> args[0];
                 if (flashMemory->Block_Erase((int16_t) stoi(args[0]))) {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci vymazani bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -272,7 +272,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Na stranku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet zapisu stranky.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -287,7 +287,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla prectena " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet cteni stranky.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -318,7 +318,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci cas posledniho cteni.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -333,7 +333,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla naprogramovana za " << value << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci cas posledniho zapisu.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -348,7 +348,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci celkovy cas cteni.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -363,7 +363,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla dohromady naprogramovana za " << value << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci celkovy cas zapsani.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -378,7 +378,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla dohromady com za " << value << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci celkovy cas komunikace.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -393,7 +393,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla vymazana " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet mazani pro stranku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -409,7 +409,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Doplnit :D.\n";
                     free(data);
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci status sektoru bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -424,7 +424,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Blok na adrese " << args[0] << " byl smazan " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet mazani bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -439,7 +439,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (value >= 0) {
                     *output << "Blok na adrese " << args[0] << " byl dohormady smazan za " << value << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci celkovy cas mazani.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -454,7 +454,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byl smazan za " << number << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci cas posledniho mazani.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -466,7 +466,12 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             try {
                 *input >> args[0];
                 bool_value = flashMemory->Is_Bad_Block((int16_t) stoi(args[0]));
-                *output << "Blok na adrese " << args[0] << " je spatny: " << bool_value << endl;
+                if (bool_value) {
+                    *output << "Blok na adrese " << args[0] << " je spatny: " << bool_value << endl;
+                } else {
+                    *output << "Nepodarilo se provest operaci poskozeni bloku.\n";
+                    return EXIT_FAILURE;
+                }
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
@@ -479,7 +484,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Blok na adrese " << args[0] << " ma " << number << "poskozenych stranek.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet spatnych stranek v bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -509,7 +514,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Do bloku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet zapsanych stranke v bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -524,7 +529,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Z bloku na adrese " << args[0] << " bylo precteno " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet prectenych stranek v bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -540,7 +545,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Doplnit :D.\n";
                     free(data);
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -554,7 +559,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "V pameti je " << number << "poskozenych bloku.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet poskozenych stranek v bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -568,7 +573,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "V pameti je " << number << "poskozenych stranek.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet spatnych stranek v pameti.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -597,7 +602,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Do pameti bylo zapsano " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet zapisu v pameti.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -611,7 +616,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (number >= 0) {
                     *output << "Z pameti bylo cteno " << number << "krat.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci pocet cteni v pameti.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -632,7 +637,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Podarilo se zmenit cas naprogramovani stranky na adrese " << args[0]
                     << " na " << args[1] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu zapisu stranky.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -653,7 +658,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Podarilo se zmenit cas naprogramovani bloku na adrese " << args[0]
                     << " na " << args[1] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu zapisu v bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -672,7 +677,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (flashMemory->Set_Prog_Time_Mem(stof(args[0]))) {
                     *output << "Podarilo se zmenit cas naprogramovani cele pamti na " << args[1] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu zapisu v pameti.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -693,7 +698,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Podarilo se zmenit cas cteni stranky na adrese " << args[0]
                             << " na " << args[1] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu cteni stranky.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -714,7 +719,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Podarilo se zmenit cas cteni bloku na adrese " << args[0]
                             << " na " << args[1] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu cteni bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -733,7 +738,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (flashMemory->Set_Read_Time_Mem(stof(args[0]))) {
                     *output << "Podarilo se zmenit cas cteni cele pameti na " << args[0] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu cteni v pameti.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -754,7 +759,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Podarilo se zmenit cas mazani bloku na adrese " << args[0]
                             << " na " << args[1] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu mazani v bloku.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
@@ -773,7 +778,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 if (flashMemory->Set_Erase_Time_Mem(stof(args[0]))) {
                     *output << "Podarilo se zmenit cas naprogramovani cele pameti na " << args[0] << "μs.\n";
                 } else {
-                    *output << "Nepodarilo se provest operaci.\n";
+                    *output << "Nepodarilo se provest operaci zmena casu mazani v pameti.\n";
                     return EXIT_FAILURE;
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
