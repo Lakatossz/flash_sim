@@ -490,13 +490,12 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ECC_HISTOGRAM)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->ECC_Histogram((int16_t) stoi(args[0]));
-                if(!data) {
+                string data = flashMemory->ECC_Histogram((int16_t) stoi(args[0]));
+                if(data.length() == 0) {
                     *output << "Nepodarilo se precist ECC histogram bloku na adrese " << args[0] << ".\n";
                     return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
-                    free(data);
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
@@ -580,13 +579,12 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ECC_HISTOGRAM_MEM)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->ECC_Histogram();
-                if(!data) {
+                string data = flashMemory->ECC_Histogram();
+                if(data.length() == 0) {
                     *output << "Nepodarilo se precist ECC histogram pameti " << args[0] << ".\n";
                     return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
-                    free(data);
                 }
 //                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
