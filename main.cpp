@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
-#include "../include/flash/flash.h"
+#include "flash_sim/include/flash/flash.h"
 
 using namespace std;
 

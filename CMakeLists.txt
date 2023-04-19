@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 3.0)
-project(flash_sim)
+project(flash_sim_project)
 
-set(CMAKE_CXX_STANDARD 14)
+set(SOURCE_FILES main.cpp)
 
-include_directories(include)
+add_executable(flash_sim_run ${SOURCE_FILES})
 
-add_executable(
-        flash_sim
-        source/main.cpp
-        source/flash/flash.cpp
-        source/flash/statistics/Page_Stats.cpp
-        source/flash/statistics/Block_Stats.cpp
-        source/flash/statistics/Memory_Stats.cpp)
+include_directories(flash_sim)
+
+add_subdirectory(flash_sim)
+add_subdirectory(tests)
+
+target_link_libraries(flash_sim_run flash_sim_)

@@ -35,4 +35,7 @@ Error Correction Code - slouží k detekci chyby stránky nebo bloku.
 
 ### Statistické příkazy
 
+### TODO
+* Přidat tutorial na přidání unittestů.
+
 

@@ -5,10 +5,9 @@
 #include <fstream>
 #include <cstdlib>
 #include <uuid/uuid.h>
-#include <list>
-#include "flash/statistics/Page_Stats.h"
-#include "flash/statistics/Block_Stats.h"
-#include "flash/statistics/Memory_Stats.h"
+#include "../include/flash/statistics/Page_Stats.h"
+#include "../include/flash/statistics/Block_Stats.h"
+#include "../include/flash/statistics/Memory_Stats.h"
 
 typedef u_int32_t int_32;
 typedef u_int8_t int_8;
