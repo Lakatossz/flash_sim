@@ -36,6 +36,16 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
     float erase_time = DEFAULT_ERASE_TIME;
     NMem_Type type = DEFAULT_MEM_TYPE;
     string type_s = "slc";
+    int_32 bad_blocks_fact = DEFAULT_BAD_BLOCKS_FACTORY;
+    float max_read_page_time = MAX_READ_PAGE_TIME;
+    float max_page_prog_time = MAX_PAGE_PROG_TIME;
+    float max_erase_time = MAX_ERASE_TIME;
+    float min_read_page_time = MIN_READ_PAGE_TIME;
+    float min_page_prog_time = MIN_PAGE_PROG_TIME;
+    float min_erase_time = MIN_ERASE_TIME;
+    float com_time = DEFAULT_COM_TIME;
+    int_32 max_erase_num = MAX_ERASE_NUMBER;
+
 
     /**
      * Zkontrolují se všechny všechny řetězce, hledají se označení parametrů a porovnají se s
@@ -122,6 +132,106 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
                 type = NMem_Type::QLC;
             } else {
                 *output << "Spatny parametr typu pameti. Povolene jsou (slc, mlc, tlc, qlc)!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_BAD_BLOCKS_FACT) == 0) {
+            try {
+                bad_blocks_fact = stoi(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_MAX_READ_PAGE_TIME) == 0) {
+            try {
+                max_read_page_time = stof(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_MAX_PAGE_PROG_TIME) == 0) {
+            try {
+                max_page_prog_time = stof(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_MAX_ERASE_TIME) == 0) {
+            try {
+                max_erase_time = stof(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_MIN_READ_PAGE_TIME) == 0) {
+            try {
+                min_read_page_time = stof(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_MIN_PAGE_PROG_TIME) == 0) {
+            try {
+                min_page_prog_time = stof(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_MIN_ERASE_TIME) == 0) {
+            try {
+                min_erase_time = stof(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        } else if (strcmp(argv[i], PARAM_COM_TIME) == 0) {
+            try {
+                com_time = stof(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return nullptr;
+            }
+        }
+        else if (strcmp(argv[i], PARAM_MAX_ERASE_NUM) == 0) {
+            try {
+                max_erase_num = stoi(argv[i + 1]);
+//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+//                    return nullptr;
+//                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
                 return nullptr;
             }
         }

@@ -12,6 +12,11 @@ Page_Stats::Page_Stats() {
     Num_Of_Writes = 0;
 }
 
+Page_Stats::Page_Stats(float read_page_time, float page_prog_time) {
+    Read_Page_Time = DEFAULT_READ_PAGE_TIME;
+    Page_Prog_Time = DEFAULT_PAGE_PROG_TIME;
+}
+
 float Page_Stats::getReadPageTime() const {
     return Read_Page_Time;
 }

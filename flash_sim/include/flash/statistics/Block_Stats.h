@@ -29,6 +29,10 @@ private:
     int Num_Of_Erases = 0;
 
 public:
+
+    /**
+     * Vytvoří nové statistiky pro blok.
+     */
     Block_Stats();
 
     float getEraseTime() const;

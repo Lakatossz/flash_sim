@@ -37,6 +37,8 @@ public:
 
     Page_Stats();
 
+    Page_Stats(float read_page_time, float page_prog_time);
+
     float getReadPageTime() const;
 
     void setReadPageTime(float readPageTime);

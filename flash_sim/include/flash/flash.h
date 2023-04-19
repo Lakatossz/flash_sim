@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <cstdlib>
 #include <uuid/uuid.h>
 #include "../include/flash/statistics/Page_Stats.h"
@@ -23,6 +24,7 @@ using namespace std;
 #define PARAM_PAGE_SIZE "-page_size"
 #define PARAM_NUM_OF_BLOCK "-num_of_block"
 #define PARAM_MEM_TYPE "-mem_type"
+#define PARAM_BAD_BLOCKS_FACT "-bad_blocks_fact"
 
 /**
  * Definice parametrů vložených při spuštění.
@@ -30,6 +32,14 @@ using namespace std;
 #define PARAM_READ_PAGE_TIME "-read_page_time"
 #define PARAM_PAGE_PROG_TIME "-page_prog_time"
 #define PARAM_ERASE_TIME "-erase_time"
+#define PARAM_MAX_READ_PAGE_TIME "-read_page_time"
+#define PARAM_MAX_PAGE_PROG_TIME "-page_prog_time"
+#define PARAM_MAX_ERASE_TIME "-erase_time"
+#define PARAM_MIN_READ_PAGE_TIME "-read_page_time"
+#define PARAM_MIN_PAGE_PROG_TIME "-page_prog_time"
+#define PARAM_MIN_ERASE_TIME "-erase_time"
+#define PARAM_COM_TIME "-com_time"
+#define PARAM_MAX_ERASE_NUM "-max_erase_unm"
 
 /**
  * Maximální možné hodnoty parametrů.
@@ -132,6 +142,8 @@ using namespace std;
 //#define DEFAULT_PAGE_PROG_TIME 15
 //#define DEFAULT_ERASE_TIME 30
 #define DEFAULT_MEM_TYPE NMem_Type::SLC
+#define DEFAULT_COM_TIME 15
+#define DEFAULT_BAD_BLOCKS_FACTORY 12
 
 /**
  * Definice výčtového typu představující typ buňky paměti.

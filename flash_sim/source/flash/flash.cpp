@@ -1,24 +1,30 @@
 #include "flash/flash.h"
 
 /**
- * Funkce pro inkrementaci pole predstavujici pocitadlo.
- * @param counter Pole u_char - pocitadlo.
- * @param size Pocet bytu pole.
+ * Funkce pro inkrementaci pole představující počítadlo.
+ * @param array Pole u_char - počítadlo.
+ * @param size Počet bytu pole.
  */
-void increase_counter(u_char *counter, size_t size) {
+void increase_counter(u_char *array, size_t size) {
     for (size_t i = size - 1; i > 0; --i) {
-        if (counter[i] < (u_char) 1L) {
-            counter[i]++;
+        if (array[i] < (u_char) 1L) {
+            array[i]++;
             return;
         }
     }
 }
 
-int_32 counter_value(const u_char *counter, size_t size) {
+/**
+ * Funkce pro získání integer hodnoty pole znaků o dané velikosti.
+ * @param array Ukazatel na pole znaků.
+ * @param size Velikost pole.
+ * @return Číselná hodnota pole.
+ */
+int_32 counter_value(const u_char *array, size_t size) {
 
     int_32 value = 0;
     size_t i = 0;
-    while (counter[i] == (u_char) 1L || i < size) {
+    while (array[i] == (u_char) 1L || i < size) {
         value += (u_char) 1L;
         ++i;
     }
@@ -27,8 +33,8 @@ int_32 counter_value(const u_char *counter, size_t size) {
 }
 
 /**
- *
- * @param time_type
+ * Zavolá daný algoritmus pro typ operace.
+ * @param time_type Typ operace.
  */
 void increase_time(NTime_Type type) {
     if (type == NTime_Type::READ_PAGE_TIME) {
@@ -40,7 +46,13 @@ void increase_time(NTime_Type type) {
     }
 }
 
-int check_address(nand_memory m, int_16 addr) {
+/**
+ * Zkontroluje validnost adresy.
+ * @param m Struktura paměti.
+ * @param addr Kontrolovaná adresa.
+ * @return Adresa je validní - 0, jinak - 1.
+ */
+int_32 check_address(nand_memory m, int_16 addr) {
     /** Zkontroluju adresu bloku. */
     if ((addr >> 8) >= m.md.num_of_blocks) {
         cout << (addr >> 8) << endl;
@@ -59,25 +71,9 @@ int check_address(nand_memory m, int_16 addr) {
 
 Flash_Memory::Flash_Memory()
 {
-    m.md.pages_stats = (Page_Stats *) malloc(sizeof(Page_Stats) * m.md.num_of_pages * m.md.num_of_blocks);
-    if (!m.md.pages_stats) {
-        cout << "Není dostatek paměti.\n";
-        return;
-    }
-
-    for (int i = 0; i < m.md.num_of_pages; ++i) {
-        m.md.pages_stats[i] = Page_Stats();
-    }
-
-    m.md.blocks_stats = (Block_Stats *) malloc(sizeof(Block_Stats) * m.md.num_of_blocks);
-    if (!m.md.blocks_stats) {
-        cout << "Není dostatek paměti.\n";
-        return;
-    }
-
-    for (int i = 0; i < m.md.num_of_blocks; ++i) {
-        m.md.blocks_stats[i] = Block_Stats();
-    }
+    /* Vytvoření pole pro ukládání statistik. */
+    m.md.pages_stats = new Page_Stats[m.md.num_of_pages * m.md.num_of_blocks];
+    m.md.blocks_stats = new Block_Stats[m.md.num_of_blocks];
 }
 Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, NMem_Type memory_type,
                            float read_page_time, float page_prog_time, float erase_time)
@@ -87,39 +83,27 @@ Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of
     m.md.num_of_blocks = number_of_blocks;
     m.md.memory_type = memory_type;
 
-    free(m.md.pages_stats);
-    m.md.pages_stats = (Page_Stats *) malloc(sizeof(Page_Stats) * m.md.num_of_pages * m.md.num_of_blocks);
-    if (!m.md.pages_stats) {
-        cout << "Není dostatek paměti.\n";
-        return;
-    }
+    delete(m.md.pages_stats);
+    delete(m.md.blocks_stats);
+
+    m.md.pages_stats = new Page_Stats[m.md.num_of_pages * m.md.num_of_blocks];
+    m.md.blocks_stats = new Block_Stats[m.md.num_of_blocks];
 
     for (int i = 0; i < m.md.num_of_pages; ++i) {
-        Page_Stats stats = Page_Stats();
-        stats.setReadPageTime(read_page_time);
-        stats.setPageProgTime(page_prog_time);
-        m.md.pages_stats[i] = stats;
-    }
-
-    free(m.md.blocks_stats);
-    m.md.blocks_stats = (Block_Stats *) malloc(sizeof(Block_Stats) * m.md.num_of_blocks);
-    if (!m.md.blocks_stats) {
-        cout << "Není dostatek paměti.\n";
-        return;
+        m.md.pages_stats[i].setReadPageTime(read_page_time);
+        m.md.pages_stats[i].setPageProgTime(page_prog_time);
     }
 
     for (int i = 0; i < m.md.num_of_blocks; ++i) {
-        Block_Stats stats = Block_Stats();
-        stats.setEraseTime(erase_time);
-        m.md.blocks_stats[i] = Block_Stats();
+        m.md.blocks_stats[i].setEraseTime(erase_time);
     }
 }
 
 Flash_Memory::~Flash_Memory()
 {
-    free(m.mem_cache);
-    free(m.md.pages_stats);
-    free(m.md.blocks_stats);
+    delete(m.mem_cache);
+    delete(m.md.pages_stats);
+    delete(m.md.blocks_stats);
 }
 
 int Flash_Memory::Flash_Init()
@@ -134,11 +118,7 @@ int Flash_Memory::Flash_Init()
     m.md.true_mem_size = m.md.mem_size + m.md.num_of_blocks * m.md.md_b_size
             + m.md.num_of_blocks * m.md.num_of_pages * m.md.md_p_size;
 
-    m.data = (u_char *) malloc(sizeof(u_char) * m.md.true_mem_size);
-    if (m.data == nullptr) {
-        return EXIT_FAILURE;
-    }
-    memset(m.data, 0L, m.md.true_mem_size);
+    m.data = new u_char[m.md.true_mem_size];
 
 //    uuid_generate_random(m.md.id);
 
@@ -153,13 +133,7 @@ int Flash_Memory::Flash_Init()
 }
 
 int Flash_Memory::Cache_Init() {
-
-    m.mem_cache = (u_char *) malloc(sizeof(u_char) * m.md.page_size);
-    if (!m.mem_cache) {
-        cout << "Není dostatek paměti.\n";
-        return EXIT_FAILURE;
-    }
-
+    m.mem_cache = new u_char[m.md.page_size];
     return EXIT_SUCCESS;
 }
 
@@ -260,7 +234,6 @@ u_char* Flash_Memory::Read_Cache() const
     }
 
     memcpy(buf, m.mem_cache, m.md.page_size);
-
     return buf;
 }
 
