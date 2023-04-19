@@ -141,6 +141,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
 //                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
 //                    return nullptr;
 //                }
+
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return nullptr;
