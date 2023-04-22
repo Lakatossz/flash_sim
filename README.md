@@ -38,4 +38,4 @@ Error Correction Code - slouží k detekci chyby stránky nebo bloku.
 ### TODO
 * Přidat tutorial na přidání unittestů.
 
-
+https://www.youtube.com/watch?v=6dqFqh3UbPY

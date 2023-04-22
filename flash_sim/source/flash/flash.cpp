@@ -81,7 +81,7 @@ Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of
     m.md.page_size = page_size;
     m.md.block_size = block_size;
     m.md.num_of_blocks = number_of_blocks;
-    m.md.memory_type = memory_type;
+    m.md.mem_type = memory_type;
 
     delete(m.md.pages_stats);
     delete(m.md.blocks_stats);
@@ -176,7 +176,7 @@ int Flash_Memory::Read_Page(int_16 addr)
 
     m.md.pages_stats[page_stats_pointer].addNumOfReads(1);
     m.md.blocks_stats[(addr >> 8)].addNumOfReads(1);
-    m.md.memory_stats->addNumOfReads(1);
+    m.md.mem_stats->addNumOfReads(1);
 
     return EXIT_SUCCESS;
 }
@@ -220,7 +220,7 @@ int Flash_Memory::Read_Sector(int_16 addr)
 
     m.md.pages_stats[page_stats_pointer].addNumOfReads(1);
     m.md.blocks_stats[(addr >> 8)].addNumOfReads(1);
-    m.md.memory_stats->addNumOfReads(1);
+    m.md.mem_stats->addNumOfReads(1);
 
     return EXIT_SUCCESS;
 }
@@ -282,7 +282,7 @@ int Flash_Memory::Program_Page(int_16 addr)
 
     m.md.pages_stats[page_stats_pointer].addNumOfWrites(1);
     m.md.blocks_stats[(addr >> 8)].addNumOfWrites(1);
-    m.md.memory_stats->addNumOfWrites(1);
+    m.md.mem_stats->addNumOfWrites(1);
 
     return EXIT_SUCCESS;
 }
@@ -323,7 +323,7 @@ int Flash_Memory::Program_Sector(int_16 addr)
 
     m.md.pages_stats[page_stats_pointer].addNumOfWrites(1);
     m.md.blocks_stats[(addr >> 8)].addNumOfWrites(1);
-    m.md.memory_stats->addNumOfWrites(1);
+    m.md.mem_stats->addNumOfWrites(1);
 
     return EXIT_SUCCESS;
 }
@@ -373,7 +373,7 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
 
     m.md.pages_stats[old_page_stats_pointer].addNumOfReads(1);
     m.md.blocks_stats[(old_addr >> 8)].addNumOfReads(1);
-    m.md.memory_stats->addNumOfReads(1);
+    m.md.mem_stats->addNumOfReads(1);
 
     int_32 new_pointer = old_addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
@@ -405,7 +405,7 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
 
     m.md.pages_stats[new_page_stats_pointer].addNumOfWrites(1);
     m.md.blocks_stats[(new_addr >> 8)].addNumOfWrites(1);
-    m.md.memory_stats->addNumOfWrites(1);
+    m.md.mem_stats->addNumOfWrites(1);
 
     return EXIT_SUCCESS;
 }
@@ -465,8 +465,8 @@ int Flash_Memory::Reset()
     m.md.status = 0;
     m.md.num_of_bad_blocks = 0;
     m.md.num_of_bad_pages = 0;
-    m.md.memory_stats->setNumOfReads(0);
-    m.md.memory_stats->setNumOfWrites(0);
+    m.md.mem_stats->setNumOfReads(0);
+    m.md.mem_stats->setNumOfWrites(0);
     m.md.mem_time = 0.0;
 
     return EXIT_SUCCESS;
@@ -732,12 +732,12 @@ string Flash_Memory::ECC_Histogram()
 
 int Flash_Memory::Num_Of_Writes() const
 {
-    return m.md.memory_stats->getNumOfReads();
+    return m.md.mem_stats->getNumOfReads();
 }
 
 int Flash_Memory::Num_Of_Reads() const
 {
-    return m.md.memory_stats->getNumOfWrites();
+    return m.md.mem_stats->getNumOfWrites();
 }
 
 int Flash_Memory::Set_Prog_Time_Page(int_16 addr, float time) const
@@ -829,4 +829,85 @@ int Flash_Memory::Set_Erase_Time_Mem(float time) const
     }
 
     return EXIT_SUCCESS;
+}
+
+int Flash_Memory::Save_Memory(string file_name)
+{
+    ofstream f(file_name);
+
+    return EXIT_SUCCESS;
+}
+
+int Flash_Memory::Save_State(string file_name)
+{
+    ofstream f(file_name);
+    json j;
+    j["id"] = m.md.id;
+    j["page_size"] = m.md.page_size;
+    j["num_of_pages"] = m.md.num_of_pages;
+    j["block_size"] = m.md.block_size;
+    j["num_of_blocks"] = m.md.num_of_blocks;
+    j["mem_size"] = m.md.mem_size;
+    j["true_mem_size"] = m.md.true_mem_size;
+    j["ecc_size"] = m.md.ecc_size;
+    j["md_p_size"] = m.md.md_p_size;
+    j["md_b_size"] = m.md.md_b_size;
+    j["block_wear_size"] = m.md.block_wear_size;
+    j["status"] = m.md.status;
+    j["mem_type"] = m.md.mem_type;
+
+    j["mem_time"] = m.md.mem_time;
+    j["mem_stats"] = {
+            {"num_of_reads", m.md.mem_stats->getNumOfReads()},
+            {"num_of_writes", m.md.mem_stats->getNumOfWrites()}
+    };
+
+    j["num_of_bad_blocks"] = m.md.num_of_bad_blocks;
+    j["num_of_bad_pages"] = m.md.num_of_bad_pages;
+    auto jsonObjects = json::array();
+    for(auto i = 0; i <= m.md.num_of_blocks; ++i) {
+        jsonObjects.push_back({
+            {"erase_time", m.md.blocks_stats[i].getEraseTime()},
+            {"last_erase_time", m.md.blocks_stats[i].getLastEraseTime()},
+            {"total_erase_time", m.md.blocks_stats[i].getTotalEraseTime()},
+            {"num_of_reads", m.md.blocks_stats[i].getNumOfReads()},
+            {"num_of_writes", m.md.blocks_stats[i].getNumOfWrites()},
+            {"num_of_erases", m.md.blocks_stats[i].getNumOfErases()}
+        });
+    }
+
+    j["block_stats"] = jsonObjects;
+
+    jsonObjects = json::array();
+    for(auto i = 0; i <= m.md.num_of_blocks * m.md.num_of_pages; ++i) {
+        jsonObjects.push_back({
+            {"read_page_time", m.md.pages_stats[i].getReadPageTime()},
+            {"page_prog_time", m.md.pages_stats[i].getPageProgTime()},
+            {"last_read_page_time", m.md.pages_stats[i].getLastReadPageTime()},
+            {"last_page_prog_time", m.md.pages_stats[i].getLastPageProgTime()},
+            {"total_read_page_time", m.md.pages_stats[i].getTotalReadPageTime()},
+            {"total_page_prog_time", m.md.pages_stats[i].getTotalPageProgTime()},
+            {"com_time", m.md.pages_stats[i].getComTime()},
+            {"num_of_reads", m.md.pages_stats[i].getNumOfReads()},
+            {"num_of_writes", m.md.pages_stats[i].getNumOfWrites()}
+        });
+    }
+
+    j["page_stats"] = jsonObjects;
+
+    f << j;
+    f.close();
+    cout << "Soubor byl uzavren.\n";
+    return EXIT_SUCCESS;
+}
+
+int Flash_Memory::Load_Memory(string file_name)
+{
+    ifstream f(file_name);
+    json data = json::parse(f);
+}
+
+int Flash_Memory::Load_State(string file_name)
+{
+
 }

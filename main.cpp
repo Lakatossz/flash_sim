@@ -279,7 +279,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci cteni stranky.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Stranka byla nactena.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -291,7 +290,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci cteni sektoru.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Sector byl nacten.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -306,7 +304,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 }
                 *output << "Nactena data: " << data << endl;
                 free(data);
-//                    *output << "Cache byla nactena.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -363,7 +360,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *output << "Parametr musi byt cislo! " << "\n";
                 return EXIT_FAILURE;
             }
-//                *output << "Obsah stránky by naprogramován na jiné místo.\n";
         } else if (command == string(COM_BLOCK_ERASE)) {
             try {
                 *input >> args[0];
@@ -371,12 +367,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci vymazani bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_NUM_OF_WRITES)) {
+        } else if (command == string(COM_NUM_OF_WRITES_PAGE)) {
             try {
                 *input >> args[0];
                 number = flashMemory->Num_Of_Writes_Page((int16_t) stoi(args[0]));
@@ -386,12 +381,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet zapisu stranky.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_NUM_OF_READS)) {
+        } else if (command == string(COM_NUM_OF_READS_PAGE)) {
             try {
                 *input >> args[0];
                 number = flashMemory->Num_Of_Reads_Page((int16_t) stoi(args[0]));
@@ -401,7 +395,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet cteni stranky.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -417,12 +410,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
                     free(data);
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_READ_TIMES_LAST)) {
+        } else if (command == string(COM_READ_TIME_LAST)) {
             try {
                 *input >> args[0];
                 value = flashMemory->Read_Time_Last((int16_t) stoi(args[0]));
@@ -432,7 +424,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci cas posledniho cteni.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -447,7 +438,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci cas posledniho zapisu.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -462,7 +452,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci celkovy cas cteni.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -477,7 +466,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci celkovy cas zapsani.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -492,7 +480,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci celkovy cas komunikace.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -507,7 +494,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet mazani pro stranku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -523,7 +509,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci status sektoru bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -538,7 +523,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet mazani bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -553,7 +537,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci celkovy cas mazani.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -568,7 +551,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci cas posledniho mazani.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -583,7 +565,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci poskozeni bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -598,12 +579,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet spatnych stranek v bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_ECC_HISTOGRAM)) {
+        } else if (command == string(COM_ECC_HISTOGRAM_BLOCK)) {
             try {
                 *input >> args[0];
                 string data = flashMemory->ECC_Histogram((int16_t) stoi(args[0]));
@@ -613,12 +593,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_NUM_OF_WRITES_PAGE)) {
+        } else if (command == string(COM_NUM_OF_WRITES_BLOCK)) {
             try {
                 *input >> args[0];
                 number = flashMemory->Num_Of_Writes((int16_t) stoi(args[0]));
@@ -628,12 +607,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet zapsanych stranke v bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_NUM_OF_READS_PAGE)) {
+        } else if (command == string(COM_NUM_OF_READS_BLOCK)) {
             try {
                 *input >> args[0];
                 number = flashMemory->Num_Of_Reads((int16_t) stoi(args[0]));
@@ -643,7 +621,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet prectenych stranek v bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -659,7 +636,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -673,7 +649,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet poskozenych stranek v bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -687,7 +662,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet spatnych stranek v pameti.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -702,7 +676,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -716,7 +689,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet zapisu v pameti.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -730,7 +702,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci pocet cteni v pameti.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -751,7 +722,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu zapisu stranky.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -772,7 +742,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu zapisu v bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -791,7 +760,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu zapisu v pameti.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -812,7 +780,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu cteni stranky.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -833,7 +800,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu cteni bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -852,7 +818,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu cteni v pameti.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -873,7 +838,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu mazani v bloku.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -892,7 +856,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     *output << "Nepodarilo se provest operaci zmena casu mazani v pameti.\n";
                     return EXIT_FAILURE;
                 }
-//                    *output << "Obsah bloku byl vymazán.\n";
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
@@ -901,7 +864,26 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             if (flashMemory->Reset()) {
                 *output << "Pamet byla vyresetovana.\n";
             }
-//                *output << "Paměť byla vyresetována.\n";
+        } else if (command == string(COM_SAVE_MEM)) {
+            *input >> args[0];
+            if (flashMemory->Save_Memory(args[0])) {
+                *output << "Obsah pameti byl ulozen..\n";
+            }
+        } else if (command == string(COM_SAVE_STATE)) {
+            *input >> args[0];
+            if (flashMemory->Save_State(args[0])) {
+                *output << "Stav pameti byl ulozen.\n";
+            }
+        } else if (command == string(COM_LOAD_MEM)) {
+            *input >> args[0];
+            if (flashMemory->Load_Memory(args[0])) {
+                *output << "Obsah pameti byl nacten.\n";
+            }
+        } else if (command == string(COM_LOAD_STATE)) {
+            *input >> args[0];
+            if (flashMemory->Load_State(args[0])) {
+                *output << "Stav pameti byl nacten.\n";
+            }
         } else {
             *output << COM_UNKNOWN;
         }

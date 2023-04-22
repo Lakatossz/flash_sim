@@ -6,6 +6,7 @@
 #include <memory>
 #include <cstdlib>
 #include <uuid/uuid.h>
+#include <nlohmann/json.hpp>
 #include "../include/flash/statistics/Page_Stats.h"
 #include "../include/flash/statistics/Block_Stats.h"
 #include "../include/flash/statistics/Memory_Stats.h"
@@ -13,7 +14,9 @@
 typedef u_int32_t int_32;
 typedef u_int8_t int_8;
 typedef u_int16_t int_16;
+
 using namespace std;
+using json = nlohmann::json;
 
 /**
  * Definice parametrů vložených při spuštění programu.
@@ -67,54 +70,58 @@ using namespace std;
 /**
  * Definové kódy příkazů.
  */
-#define COM_READ_PAGE "0x01"
-#define COM_READ_SECTOR "0x02"
-#define COM_READ_STATUS "0x03"
-#define COM_READ_ID "0x04"
-#define COM_PROGRAM_PAGE "0x05"
-#define COM_PROGRAM_SECTOR "0x06"
-#define COM_PROGRAM_DATA_MOVE "0x07"
-#define COM_BLOCK_ERASE "0x08"
-#define COM_RESET "0x09"
-#define COM_READ_CACHE "0x0a"
-#define COM_WRITE_CACHE "0x0b"
-#define COM_NUM_OF_WRITES "0x0c"
-#define COM_NUM_OF_READS "0x0d"
-#define COM_ECC_INFO "0x0e"
-#define COM_READ_TIMES_LAST "0x0f"
-#define COM_PROG_TIME_LAST "0x10"
-#define COM_READ_TIME_TOTAL "0x11"
-#define COM_PROG_TIME_TOTAL "0x12"
-#define COM_COM_TOTAL_TIME "0x13"
-#define COM_NUM_OF_ERASES_PAGE "0x14"
-#define COM_SECTOR_STATUS_BLOCK "0x15"
-#define COM_NUM_OF_ERASES_BLOCK "0x16"
-#define COM_ERASE_TIME_TOTAL "0x17"
-#define COM_ERASE_TIME_LAST "0x18"
-#define COM_IS_BAD_BLOCK "0x19"
-#define COM_NUM_OF_BAD_PAGES "0x1a"
-#define COM_ECC_HISTOGRAM "0x1b"
-#define COM_NUM_OF_WRITES_PAGE "0x1c"
-#define COM_NUM_OF_READS_PAGE "0x1d"
-#define COM_SECTOR_STATUS_PAGE "0x1e"
-#define COM_NUM_OF_BAD_BLOCKS "0x1f"
-#define COM_NUM_OF_BAD_PAGES_MEM "0x20"
-#define COM_ECC_HISTOGRAM_MEM "0x21"
-#define COM_NUM_OF_WRITES_MEM "0x22"
-#define COM_NUM_OF_READS_MEM "0x23"
+#define COM_READ_PAGE "read_page"
+#define COM_READ_SECTOR "read_sector"
+#define COM_READ_STATUS "read_status"
+#define COM_READ_ID "read_id"
+#define COM_PROGRAM_PAGE "program_page"
+#define COM_PROGRAM_SECTOR "program_sector"
+#define COM_PROGRAM_DATA_MOVE "program_data_move"
+#define COM_BLOCK_ERASE "block_erase"
+#define COM_RESET "reset"
+#define COM_READ_CACHE "read_cache"
+#define COM_WRITE_CACHE "write_cache"
+#define COM_NUM_OF_WRITES_PAGE "number_of_writes_page"
+#define COM_NUM_OF_READS_PAGE "number_of_reads_page"
+#define COM_ECC_INFO "ecc_info"
+#define COM_READ_TIME_LAST "read_last_time"
+#define COM_PROG_TIME_LAST "program_last_time"
+#define COM_READ_TIME_TOTAL "read_total_time"
+#define COM_PROG_TIME_TOTAL "program_total_time"
+#define COM_COM_TOTAL_TIME "comm_total_time"
+#define COM_NUM_OF_ERASES_PAGE "number_of_erases_page"
+#define COM_SECTOR_STATUS_BLOCK "sector_status_block"
+#define COM_NUM_OF_ERASES_BLOCK "number_of_erases_block"
+#define COM_ERASE_TIME_TOTAL "erase_total_time"
+#define COM_ERASE_TIME_LAST "erase_last_time"
+#define COM_IS_BAD_BLOCK "is_bad_block"
+#define COM_NUM_OF_BAD_PAGES "number_of_bad_pages"
+#define COM_ECC_HISTOGRAM_BLOCK "ecc_histogram_block"
+#define COM_NUM_OF_WRITES_BLOCK "number_of_writes_block"
+#define COM_NUM_OF_READS_BLOCK "number_of_reads_block"
+#define COM_SECTOR_STATUS_PAGE "sector_status_page"
+#define COM_NUM_OF_BAD_BLOCKS "number_of_bad_blocks"
+#define COM_NUM_OF_BAD_PAGES_MEM "number_of_bad_pages_memory"
+#define COM_ECC_HISTOGRAM_MEM "ecc_histogram_memory"
+#define COM_NUM_OF_WRITES_MEM "number_of_writes_memory"
+#define COM_NUM_OF_READS_MEM "number_of_reads_memory"
+#define COM_SAVE_MEM "save_memory"
+#define COM_SAVE_STATE "save_state"
+#define COM_LOAD_MEM "load_memory"
+#define COM_LOAD_STATE "load_state"
 
 /**
  * Definice příkazů vložených při běhu.
  * TODO - Jak budu řešit změnu počtu zápisů při změně času?
  */
-#define COM_CHANGE_PROG_TIME_PAGE "0x24"
-#define COM_CHANGE_PROG_TIME_BLOCK "0x25"
-#define COM_CHANGE_PROG_TIME_MEM "0x26"
-#define COM_CHANGE_READ_TIME_PAGE "0x27"
-#define COM_CHANGE_READ_TIME_BLOCK "0x28"
-#define COM_CHANGE_READ_TIME_MEM "0x29"
-#define COM_CHANGE_ERASE_TIME_BLOCK "0x2a"
-#define COM_CHANGE_ERASE_TIME_MEM "0x2b"
+#define COM_CHANGE_PROG_TIME_PAGE "change_program_time_page"
+#define COM_CHANGE_PROG_TIME_BLOCK "change_program_time_block"
+#define COM_CHANGE_PROG_TIME_MEM "change_program_time_memory"
+#define COM_CHANGE_READ_TIME_PAGE "change_read_time_page"
+#define COM_CHANGE_READ_TIME_BLOCK "change_read_time_block"
+#define COM_CHANGE_READ_TIME_MEM "change_read_time_memory"
+#define COM_CHANGE_ERASE_TIME_BLOCK "change_erase_time_block"
+#define COM_CHANGE_ERASE_TIME_MEM "change_erase_time_memory"
 
 /** Příkaz ukončující běh programu. */
 #define COM_STOP "STOP"
@@ -192,11 +199,11 @@ typedef struct nand_metadata_struct {
     size_t md_b_size = 5; /** Celkový počet metadat jednoho bloku. */
     size_t block_wear_size = 32; /** Velikost bitů pro pole počítadla wear-levelingu. */
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
-    NMem_Type memory_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
+    NMem_Type mem_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
 
     // Dynamické parametry paměti.
-    int_32 mem_time = 0; /** Doba běhu paměti v μs. */
-    Memory_Stats *memory_stats = new Memory_Stats();
+    float mem_time = 0; /** Doba běhu paměti v μs. */
+    Memory_Stats *mem_stats = new Memory_Stats();
     int num_of_bad_blocks = 0; /** Počet poškozených bloků v paměti. */
     int num_of_bad_pages = 0; /** Počet poškozených stránek v paměti. */
     Block_Stats *blocks_stats = nullptr; /** Pole statistik bloků. */
@@ -470,4 +477,24 @@ public:
      * Nastaví čas mazání v paměti.
      */
     int Set_Erase_Time_Mem(float time) const;
+
+    /**
+     * Uloží data paměti do souboru.
+     */
+    int Save_Memory(string file_name);
+
+    /**
+     * Uloží stav paměti do souboru.
+     */
+    int Save_State(string file_name);
+
+    /**
+     * Načte data paměti ze souboru.
+     */
+    int Load_Memory(string file_name);
+
+    /**
+     * Načte stav paměti ze souboru.
+     */
+    int Load_State(string file_name);
 };
