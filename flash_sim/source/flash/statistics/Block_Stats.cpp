@@ -33,27 +33,27 @@ void Block_Stats::setTotalEraseTime(float totalEraseTime) {
     Total_Erase_Time = totalEraseTime;
 }
 
-int Block_Stats::getNumOfReads() const {
+size_t Block_Stats::getNumOfReads() const {
     return Num_Of_Reads;
 }
 
-void Block_Stats::setNumOfReads(int numOfReads) {
+void Block_Stats::setNumOfReads(size_t numOfReads) {
     Num_Of_Reads = numOfReads;
 }
 
-int Block_Stats::getNumOfWrites() const {
+size_t Block_Stats::getNumOfWrites() const {
     return Num_Of_Writes;
 }
 
-void Block_Stats::setNumOfWrites(int numOfWrites) {
+void Block_Stats::setNumOfWrites(size_t numOfWrites) {
     Num_Of_Writes = numOfWrites;
 }
 
-int Block_Stats::getNumOfErases() const {
+size_t Block_Stats::getNumOfErases() const {
     return Num_Of_Erases;
 }
 
-void Block_Stats::setNumOfErases(int numOfErases) {
+void Block_Stats::setNumOfErases(size_t numOfErases) {
     Num_Of_Erases = numOfErases;
 }
 
@@ -69,14 +69,22 @@ void Block_Stats::addTotalEraseTime(float eraseTime) {
     Total_Erase_Time += eraseTime;
 }
 
-void Block_Stats::addNumOfReads(int numOfReads) {
+void Block_Stats::addNumOfReads(size_t numOfReads) {
     Num_Of_Reads += numOfReads;
 }
 
-void Block_Stats::addNumOfWrites(int numOfWrites) {
+void Block_Stats::addNumOfWrites(size_t numOfWrites) {
     Num_Of_Writes += numOfWrites;
 }
 
-void Block_Stats::addNumOfErases(int numOfErases) {
+void Block_Stats::addNumOfErases(size_t numOfErases) {
     Num_Of_Erases += numOfErases;
+}
+
+size_t Block_Stats::getNumOfBadPages() const {
+    return Num_Of_Bad_Pages;
+}
+
+void Block_Stats::setNumOfBadPages(size_t numOfBadPages) {
+    Num_Of_Bad_Pages = numOfBadPages;
 }

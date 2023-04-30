@@ -15,6 +15,8 @@ typedef u_int32_t int_32;
 typedef u_int8_t int_8;
 typedef u_int16_t int_16;
 
+typedef std::basic_ofstream<unsigned char, std::char_traits<unsigned char> > uofstream;
+
 using namespace std;
 using json = nlohmann::json;
 
@@ -195,17 +197,17 @@ typedef struct nand_metadata_struct {
     size_t mem_size = 0; /** Velikost paměti. */
     int_32 true_mem_size = 0; /** Počet bytů pameti. */
     int_32 ecc_size = 16; /** Počet bitů ECC kódu. */
-    size_t md_p_size = 3; /** Celkový počet metadat jedné stránky. */
-    size_t md_b_size = 5; /** Celkový počet metadat jednoho bloku. */
     size_t block_wear_size = 32; /** Velikost bitů pro pole počítadla wear-levelingu. */
+    size_t md_p_size = 3; /** Celkový počet metadat jedné stránky 16b pro ECC + 8b navic napr pro valid bit. */
+    size_t md_b_size = 5 + block_wear_size; /** Celkový počet metadat jednoho bloku. */
     u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
     NMem_Type mem_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
 
     // Dynamické parametry paměti.
     float mem_time = 0; /** Doba běhu paměti v μs. */
     Memory_Stats *mem_stats = new Memory_Stats();
-    int num_of_bad_blocks = 0; /** Počet poškozených bloků v paměti. */
-    int num_of_bad_pages = 0; /** Počet poškozených stránek v paměti. */
+    size_t num_of_bad_blocks = 0; /** Počet poškozených bloků v paměti. */
+    size_t num_of_bad_pages = 0; /** Počet poškozených stránek v paměti. */
     Block_Stats *blocks_stats = nullptr; /** Pole statistik bloků. */
     Page_Stats *pages_stats = nullptr; /** Pole statistik stránek. */
 } nand_metadata;
@@ -247,6 +249,14 @@ public:
                  float erase_time);
 
     /**
+     * Vytvoří paměť s parametry danými z načtení ze souboru.
+     */
+    Flash_Memory(int_32 page_size,
+                 int_32 block_size,
+                 int_32 number_of_blocks,
+                 NMem_Type memory_type);
+
+    /**
      * Uvolní všechnu alokovanou paměť.
      */
     ~Flash_Memory();
@@ -255,6 +265,11 @@ public:
      * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
      */
     int Flash_Init();
+
+    /**
+     * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
+     */
+    int Flash_Init(u_char *data, int_32 size);
 
     /**
      * Připraví blok cache k použití.
@@ -391,7 +406,7 @@ public:
     /**
      * Vrátí počet poškozených stránek v bloku na dané adrese.
      */
-    int Num_Of_Bad_Pages(int_16 addr) const;
+    size_t Num_Of_Bad_Pages(int_8 addr) const;
 
     /**
      * Histogram pro ECC všech stránek v bloku na dané adrese.
@@ -481,20 +496,28 @@ public:
     /**
      * Uloží data paměti do souboru.
      */
-    int Save_Memory(string file_name);
+    int Save_Memory(const string& file_name);
 
     /**
      * Uloží stav paměti do souboru.
      */
-    int Save_State(string file_name);
+    int Save_State(const string& file_name);
 
     /**
      * Načte data paměti ze souboru.
      */
-    int Load_Memory(string file_name);
+    int Load_Memory(const string& file_name);
 
     /**
      * Načte stav paměti ze souboru.
      */
-    int Load_State(string file_name);
+    Flash_Memory * Load_State(const string& file_name);
+
+    void Set_Id(uuid_t id);
+
+    u_char * Get_Data(int_32& size);
+
+    void Set_Data();
+
+    int_32 Get_True_Mem_Size();
 };

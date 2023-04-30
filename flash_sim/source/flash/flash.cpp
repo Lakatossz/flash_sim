@@ -99,6 +99,20 @@ Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of
     }
 }
 
+Flash_Memory::Flash_Memory(int_32 page_size, int_32 block_size, int_32 number_of_blocks, NMem_Type memory_type)
+{
+    m.md.page_size = page_size;
+    m.md.block_size = block_size;
+    m.md.num_of_blocks = number_of_blocks;
+    m.md.mem_type = memory_type;
+
+    delete(m.md.pages_stats);
+    delete(m.md.blocks_stats);
+
+    m.md.pages_stats = new Page_Stats[m.md.num_of_pages * m.md.num_of_blocks];
+    m.md.blocks_stats = new Block_Stats[m.md.num_of_blocks];
+}
+
 Flash_Memory::~Flash_Memory()
 {
     delete(m.mem_cache);
@@ -132,6 +146,33 @@ int Flash_Memory::Flash_Init()
     return EXIT_SUCCESS;
 }
 
+int Flash_Memory::Flash_Init(u_char *data, int_32 size)
+{
+    /** Pocet stranek uvnitr bloku. */
+    m.md.num_of_pages = m.md.block_size / m.md.page_size;
+
+    /** Počet bytů, které paměť obsahuje. */
+    m.md.mem_size = m.md.num_of_blocks * m.md.block_size;
+
+    /** Celková velikost paměti = úložný prostor + metadata pro stránky + metadata pro bloky. */
+    m.md.true_mem_size = m.md.mem_size + m.md.num_of_blocks * m.md.md_b_size
+                         + m.md.num_of_blocks * m.md.num_of_pages * m.md.md_p_size;
+
+    m.data = new u_char(m.md.true_mem_size);
+    memcpy(m.data, data, size);
+
+//    uuid_generate_random(m.md.id);
+
+    cout << "Page size: " << m.md.page_size << endl;
+    cout << "Block size: " << m.md.block_size << endl;
+    cout << "Number of pages: " << m.md.num_of_pages << endl;
+    cout << "Number of blocks: " << m.md.num_of_blocks << endl;
+    cout << "Memory size: " << m.md.mem_size << endl;
+    cout << "True memory size: " << m.md.true_mem_size << endl;
+
+    return EXIT_SUCCESS;
+}
+
 int Flash_Memory::Cache_Init() {
     m.mem_cache = new u_char[m.md.page_size];
     return EXIT_SUCCESS;
@@ -144,7 +185,8 @@ int Flash_Memory::Read_Page(int_16 addr)
         return EXIT_FAILURE;
     }
 
-    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+                     + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
 //    m.md.status = m.md.status | (1 << 5)
 
@@ -188,7 +230,8 @@ int Flash_Memory::Read_Sector(int_16 addr)
         return EXIT_FAILURE;
     }
 
-    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+                     + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
 //    m.md.status = m.md.status | (1 << 5)
 
@@ -251,18 +294,13 @@ int Flash_Memory::Program_Page(int_16 addr)
 {
     if (check_address(m, addr))
         return EXIT_FAILURE;
-
-    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+//    blok: (addr >> 8) stranka: (addr & (uint8_t) ~0L)
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+            + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
+    cout << "pointer: " << pointer << endl;
 
     /** Kontrola validace stránky - jestli je použitelná. */
-    if (m.data[pointer + m.md.page_size] >> 0 == 1) {
-        return EXIT_FAILURE;
-    }
-
-    /** Zkontroluju, jestli je možné stránku ještě smazat. */
-    /** cislo bloku + cislo stranky + 5. pozice znaku */
-    if (m.data[pointer + 1] >> 1 == 1) {
-        cout << "Blok je již požkozený.\n";
+    if (m.data[pointer + m.md.page_size] >> 1 == 1) {
         m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
     }
@@ -293,7 +331,8 @@ int Flash_Memory::Program_Sector(int_16 addr)
         return EXIT_FAILURE;
     }
 
-    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+                     + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
     /** Kontrola validace stránky - jestli je použitelná. */
     if (m.data[pointer + m.md.page_size] >> 0 == 1) {
@@ -498,7 +537,8 @@ u_char * Flash_Memory::ECC_Info(int_16 addr) const
 
     // TODO - doimplementovat
 
-    int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+                     + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
     auto *ecc_data = (u_char *) malloc(sizeof(u_char) * m.md.ecc_size);
     if (!ecc_data) {
@@ -571,6 +611,9 @@ u_char * Flash_Memory::Sector_Status_Block(int_16 addr) const
         return nullptr;
     }
 
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+                     + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
+
     // TODO - doimplementovat
 }
 
@@ -607,14 +650,19 @@ bool Flash_Memory::Is_Bad_Block(int_16 addr) const
         return false;
     }
 
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+                     + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
+
     // TODO - doimplementovat
 }
 
-int Flash_Memory::Num_Of_Bad_Pages(int_16 addr) const
+size_t Flash_Memory::Num_Of_Bad_Pages(int_8 addr) const
 {
     if (check_address(m, addr)) {
         return -1;
     }
+
+
 
     // TODO - doimplementovat
 }
@@ -653,6 +701,9 @@ u_char * Flash_Memory::Sector_Status_Page(int_16 addr) const
     if (check_address(m, addr)) {
         return nullptr;
     }
+
+    int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
+                     + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
     // TODO - doimplementovat
 }
@@ -831,18 +882,36 @@ int Flash_Memory::Set_Erase_Time_Mem(float time) const
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Save_Memory(string file_name)
+int Flash_Memory::Save_Memory(const string& file_name)
 {
-    ofstream f(file_name);
+    ofstream f(file_name, ios::out | ios::binary);
+    if(!f) {
+        cout << "Nepodarilo se otevrit soubor " << file_name << endl;
+        return 1;
+    }
 
+    ostream *output;
+    output = &f;
+
+//    *output << m.data;
+
+    f.write((char *) m.data, m.md.true_mem_size);
+
+    f.close();
+    cout << "Soubor byl uzavren.\n";
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Save_State(string file_name)
+int Flash_Memory::Save_State(const string& file_name)
 {
     ofstream f(file_name);
+    if (!f) {
+        cout << "Nepodarilo se otevrit soubor " << file_name << endl;
+        return EXIT_FAILURE;
+    }
+
     json j;
-    j["id"] = m.md.id;
+//    j["id"] = m.md.id;
     j["page_size"] = m.md.page_size;
     j["num_of_pages"] = m.md.num_of_pages;
     j["block_size"] = m.md.block_size;
@@ -901,13 +970,107 @@ int Flash_Memory::Save_State(string file_name)
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Load_Memory(string file_name)
+int Flash_Memory::Load_Memory(const string& file_name)
 {
-    ifstream f(file_name);
-    json data = json::parse(f);
+    ifstream f(file_name, ios::in | ios::binary);
+    if (!f) {
+        cout << "Nepodarilo se otevrit soubor " << file_name << endl;
+        return EXIT_FAILURE;
+    }
+
+    string line;
+    size_t size = 0;
+
+    while(getline( f, line)) {
+        size += line.length();
+    }
+
+    if (size >= m.md.true_mem_size) {
+        f.clear();
+        f.seekg(0);
+        auto *data = new u_char(size);
+
+        f >> data;
+
+//        ostringstream ss;
+//        ss << f.rdbuf(); // reading data
+    }
+
 }
 
-int Flash_Memory::Load_State(string file_name)
+Flash_Memory * Flash_Memory::Load_State(const string& file_name)
 {
+    ifstream f(file_name);
+    if (!f) {
+        cout << "Nepodarilo se otevrit soubor " << file_name << endl;
+        return nullptr;
+    }
+    json j = json::parse(f);
 
+    auto *flashMemory = new Flash_Memory(
+            j["page_size"],
+            j["block_size"],
+            j["num_of_blocks"],
+            j["mem_type"]
+            );
+
+//    flashMemory->Set_Id(data["id"]);
+
+    int_32 size = 0;
+    u_char *data = this->Get_Data(size);
+
+    if (this->Get_True_Mem_Size() < size) {
+        return nullptr;
+    }
+
+    flashMemory->Flash_Init(data, size);
+
+    auto jsonObject = j["mem_stats"];
+    flashMemory->m.md.mem_stats->setNumOfWrites(jsonObject["num_of_writes"]);
+    flashMemory->m.md.mem_stats->setNumOfReads(jsonObject["num_of_reads"]);
+
+    // num_of_bad_blocks
+    // num_of_bad_pages
+
+    jsonObject = j["block_stats"];
+
+    for(auto i = 0; i < flashMemory->m.md.num_of_blocks; i++) {
+        flashMemory->m.md.blocks_stats[i].setEraseTime(jsonObject.at(i)["erase_time"]);
+        flashMemory->m.md.blocks_stats[i].setLastEraseTime(jsonObject.at(i)["last_erase_time"]);
+        flashMemory->m.md.blocks_stats[i].setTotalEraseTime(jsonObject.at(i)["total_erase_time"]);
+        flashMemory->m.md.blocks_stats[i].setNumOfReads(jsonObject.at(i)["num_of_reads"]);
+        flashMemory->m.md.blocks_stats[i].setNumOfWrites(jsonObject.at(i)["num_of_writes"]);
+        flashMemory->m.md.blocks_stats[i].setNumOfErases(jsonObject.at(i)["num_of_erases"]);
+    }
+
+    jsonObject = j["page_stats"];
+
+    for(auto i = 0; i < flashMemory->m.md.num_of_blocks * flashMemory->m.md.num_of_pages; i++) {
+        flashMemory->m.md.pages_stats[i].setReadPageTime(jsonObject.at(i)["read_page_time"]);
+        flashMemory->m.md.pages_stats[i].setPageProgTime(jsonObject.at(i)["page_prog_time"]);
+        flashMemory->m.md.pages_stats[i].setLastReadPageTime(jsonObject.at(i)["last_read_page_time"]);
+        flashMemory->m.md.pages_stats[i].setLastPageProgTime(jsonObject.at(i)["last_page_prog_time"]);
+        flashMemory->m.md.pages_stats[i].setTotalReadPageTime(jsonObject.at(i)["total_read_page_time"]);
+        flashMemory->m.md.pages_stats[i].setTotalPageProgTime(jsonObject.at(i)["total_page_prog_time"]);
+        flashMemory->m.md.pages_stats[i].setComTime(jsonObject.at(i)["com_time"]);
+        flashMemory->m.md.pages_stats[i].setNumOfReads(jsonObject.at(i)["num_of_reads"]);
+        flashMemory->m.md.pages_stats[i].setNumOfWrites(jsonObject.at(i)["num_of_writes"]);
+    }
+
+    return flashMemory;
+}
+
+void Flash_Memory::Set_Id(uuid_t id) {
+    memcpy(m.md.id, id, sizeof(uuid_t));
+}
+
+u_char * Flash_Memory::Get_Data(int_32& size) {
+    auto data = new u_char(m.md.true_mem_size);
+    memcpy(data, m.data, m.md.true_mem_size);
+    size = m.md.true_mem_size;
+    return data;
+}
+
+int_32 Flash_Memory::Get_True_Mem_Size() {
+    return m.md.true_mem_size;
 }

@@ -275,7 +275,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_READ_PAGE)) {
             try {
                 *input >> args[0];
-                if (!flashMemory->Read_Page((int16_t) stoi(args[0]))) {
+                if (flashMemory->Read_Page((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci cteni stranky.\n";
                     return EXIT_FAILURE;
                 }
@@ -286,7 +286,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_READ_SECTOR)) {
             try {
                 *input >> args[0];
-                if (!flashMemory->Read_Sector((int16_t) stoi(args[0]))) {
+                if (flashMemory->Read_Sector((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci cteni sektoru.\n";
                     return EXIT_FAILURE;
                 }
@@ -296,7 +296,6 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             }
         } else if (command == string(COM_READ_CACHE)) {
             try {
-                *input >> args[0];
                 u_char *data = flashMemory->Read_Cache();
                 if (!data) {
                     *output << "Nepodarilo se provest operaci cteni cache.\n";
@@ -317,8 +316,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_PROGRAM_PAGE)) {
             try {
                 *input >> args[0];
-                *output << "adresa: " << args[0] << endl;
-                if (flashMemory->Program_Page((int16_t) stoi(args[0]))) {
+                *output << "adresa: " << (int16_t) stoi(args[0], nullptr, 16) << endl;
+                if (flashMemory->Program_Page((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci cteni statusu.\n";
                     return EXIT_FAILURE;
                 }
@@ -330,7 +329,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             try {
                 *input >> args[0];
                 *output << "adresa: " << args[0] << endl;
-                if (flashMemory->Program_Sector((int16_t) stoi(args[0]))) {
+                if (flashMemory->Program_Sector((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci zapsani sektoru.\n";
                     return EXIT_FAILURE;
                 }
@@ -352,7 +351,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *input >> args[1];
                 *output << "nova adresa: " << args[1] << endl;
                 if (flashMemory->
-                Program_Data_Move((int16_t) stoi(args[0]), (int16_t) stoi(args[1]))) {
+                Program_Data_Move((int16_t) stoi(args[0], nullptr, 16),
+                                  (int16_t) stoi(args[1], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci presunuti dat.\n";
                     return EXIT_FAILURE;
                 }
@@ -363,7 +363,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_BLOCK_ERASE)) {
             try {
                 *input >> args[0];
-                if (flashMemory->Block_Erase((int16_t) stoi(args[0]))) {
+                if (flashMemory->Block_Erase((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci vymazani bloku.\n";
                     return EXIT_FAILURE;
                 }
@@ -374,7 +374,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_WRITES_PAGE)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Writes_Page((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Writes_Page((int16_t) stoi(args[0], nullptr, 16));
                 if (number >= 0) {
                     *output << "Na stranku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
                 } else {
@@ -388,7 +388,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_READS_PAGE)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Reads_Page((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Reads_Page((int16_t) stoi(args[0], nullptr, 16));
                 if (number >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla prectena " << number << "krat.\n";
                 } else {
@@ -402,7 +402,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ECC_INFO)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->ECC_Info((int16_t) stoi(args[0]));
+                u_char *data = flashMemory->ECC_Info((int16_t) stoi(args[0], nullptr, 16));
                 if(!data) {
                     *output << "Nepodarilo se precist ECC info na adrese " << args[0] << ".\n";
                     return EXIT_FAILURE;
@@ -417,7 +417,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_READ_TIME_LAST)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Read_Time_Last((int16_t) stoi(args[0]));
+                value = flashMemory->Read_Time_Last((int16_t) stoi(args[0], nullptr, 16));
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
                 } else {
@@ -431,7 +431,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_PROG_TIME_LAST)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Program_Time_Last((int16_t) stoi(args[0]));
+                value = flashMemory->Program_Time_Last((int16_t) stoi(args[0], nullptr, 16));
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla naprogramovana za " << value << "μs.\n";
                 } else {
@@ -445,7 +445,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_READ_TIME_TOTAL)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Read_Time_Total((int16_t) stoi(args[0]));
+                value = flashMemory->Read_Time_Total((int16_t) stoi(args[0], nullptr, 16));
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
                 } else {
@@ -459,7 +459,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_PROG_TIME_TOTAL)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Program_Time_Total((int16_t) stoi(args[0]));
+                value = flashMemory->Program_Time_Total((int16_t) stoi(args[0], nullptr, 16));
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla dohromady naprogramovana za " << value << "μs.\n";
                 } else {
@@ -473,7 +473,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_COM_TOTAL_TIME)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Com_Total_Time((int16_t) stoi(args[0]));
+                value = flashMemory->Com_Total_Time((int16_t) stoi(args[0], nullptr, 16));
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla dohromady com za " << value << "μs.\n";
                 } else {
@@ -487,7 +487,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_ERASES_PAGE)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Erases_Page((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Erases_Page((int16_t) stoi(args[0], nullptr, 16));
                 if (number >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byla vymazana " << number << "krat.\n";
                 } else {
@@ -501,7 +501,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_SECTOR_STATUS_BLOCK)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0]));
+                u_char *data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0], nullptr, 16));
                 if (data) {
                     *output << "Doplnit :D.\n";
                     free(data);
@@ -516,7 +516,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_ERASES_BLOCK)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Erases_Block((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Erases_Block((int16_t) stoi(args[0], nullptr, 16));
                 if (number >= 0) {
                     *output << "Blok na adrese " << args[0] << " byl smazan " << number << "krat.\n";
                 } else {
@@ -530,7 +530,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ERASE_TIME_TOTAL)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Erase_Time_Total((int16_t) stoi(args[0]));
+                value = flashMemory->Erase_Time_Total((int16_t) stoi(args[0], nullptr, 16));
                 if (value >= 0) {
                     *output << "Blok na adrese " << args[0] << " byl dohormady smazan za " << value << "μs.\n";
                 } else {
@@ -544,7 +544,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ERASE_TIME_LAST)) {
             try {
                 *input >> args[0];
-                value = flashMemory->Erase_Time_Last((int16_t) stoi(args[0]));
+                value = flashMemory->Erase_Time_Last((int16_t) stoi(args[0], nullptr, 16));
                 if (value >= 0) {
                     *output << "Stranka na adrese " << args[0] << " byl smazan za " << number << "μs.\n";
                 } else {
@@ -558,7 +558,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_IS_BAD_BLOCK)) {
             try {
                 *input >> args[0];
-                bool_value = flashMemory->Is_Bad_Block((int16_t) stoi(args[0]));
+                bool_value = flashMemory->Is_Bad_Block((int16_t) stoi(args[0], nullptr, 16));
                 if (bool_value) {
                     *output << "Blok na adrese " << args[0] << " je spatny: " << bool_value << endl;
                 } else {
@@ -572,7 +572,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_BAD_PAGES)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Bad_Pages((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Bad_Pages((int16_t) stoi(args[0], nullptr, 16));
                 if (number >= 0) {
                     *output << "Blok na adrese " << args[0] << " ma " << number << "poskozenych stranek.\n";
                 } else {
@@ -586,7 +586,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ECC_HISTOGRAM_BLOCK)) {
             try {
                 *input >> args[0];
-                string data = flashMemory->ECC_Histogram((int16_t) stoi(args[0]));
+                string data = flashMemory->ECC_Histogram((int16_t) stoi(args[0], nullptr, 16));
                 if(data.length() == 0) {
                     *output << "Nepodarilo se precist ECC histogram bloku na adrese " << args[0] << ".\n";
                     return EXIT_FAILURE;
@@ -600,7 +600,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_WRITES_BLOCK)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Writes((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Writes((int16_t) stoi(args[0], nullptr, 16));
                 if (number >= 0) {
                     *output << "Do bloku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
                 } else {
@@ -614,7 +614,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_NUM_OF_READS_BLOCK)) {
             try {
                 *input >> args[0];
-                number = flashMemory->Num_Of_Reads((int16_t) stoi(args[0]));
+                number = flashMemory->Num_Of_Reads((int16_t) stoi(args[0], nullptr, 16));
                 if (number >= 0) {
                     *output << "Z bloku na adrese " << args[0] << " bylo precteno " << number << "krat.\n";
                 } else {
@@ -628,7 +628,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_SECTOR_STATUS_PAGE)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0]));
+                u_char *data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0],
+                                                                               nullptr, 16));
                 if (data) {
                     *output << "Doplnit :D.\n";
                     free(data);
@@ -715,7 +716,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                             " a " << MAX_PAGE_PROG_TIME << "!\n";
                     return EXIT_FAILURE;
                 }
-                if (flashMemory->Set_Prog_Time_Page(stoi(args[0]), stof(args[1]))) {
+                if (flashMemory->Set_Prog_Time_Page(stoi(args[0], nullptr, 16),
+                                                    stof(args[1]))) {
                     *output << "Podarilo se zmenit cas naprogramovani stranky na adrese " << args[0]
                     << " na " << args[1] << "μs.\n";
                 } else {
@@ -735,7 +737,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                             " a " << MAX_PAGE_PROG_TIME << "!\n";
                     return EXIT_FAILURE;
                 }
-                if (flashMemory->Set_Prog_Time_Block(stoi(args[0]), stof(args[1]))) {
+                if (flashMemory->Set_Prog_Time_Block(stoi(args[0], nullptr, 16),
+                                                     stof(args[1]))) {
                     *output << "Podarilo se zmenit cas naprogramovani bloku na adrese " << args[0]
                     << " na " << args[1] << "μs.\n";
                 } else {
@@ -773,7 +776,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                             " a " << MAX_READ_PAGE_TIME << "!\n";
                     return EXIT_FAILURE;
                 }
-                if (flashMemory->Set_Read_Time_Page(stoi(args[0]), stof(args[1]))) {
+                if (flashMemory->Set_Read_Time_Page(stoi(args[0], nullptr, 16),
+                                                    stof(args[1]))) {
                     *output << "Podarilo se zmenit cas cteni stranky na adrese " << args[0]
                             << " na " << args[1] << "μs.\n";
                 } else {
@@ -793,7 +797,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                             " a " << MAX_READ_PAGE_TIME << "!\n";
                     return EXIT_FAILURE;
                 }
-                if (flashMemory->Set_Read_Time_Block(stoi(args[0]), stof(args[1]))) {
+                if (flashMemory->Set_Read_Time_Block(stoi(args[0], nullptr, 16),
+                                                     stof(args[1]))) {
                     *output << "Podarilo se zmenit cas cteni bloku na adrese " << args[0]
                             << " na " << args[1] << "μs.\n";
                 } else {
@@ -831,7 +836,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                             " a " << MAX_ERASE_TIME << "!\n";
                     return EXIT_FAILURE;
                 }
-                if (flashMemory->Set_Erase_Time_Block(stoi(args[0]), stof(args[1]))) {
+                if (flashMemory->Set_Erase_Time_Block(stoi(args[0], nullptr, 16),
+                                                      stof(args[1]))) {
                     *output << "Podarilo se zmenit cas mazani bloku na adrese " << args[0]
                             << " na " << args[1] << "μs.\n";
                 } else {
@@ -867,7 +873,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_SAVE_MEM)) {
             *input >> args[0];
             if (flashMemory->Save_Memory(args[0])) {
-                *output << "Obsah pameti byl ulozen..\n";
+                *output << "Obsah pameti byl ulozen.\n";
             }
         } else if (command == string(COM_SAVE_STATE)) {
             *input >> args[0];
@@ -881,8 +887,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             }
         } else if (command == string(COM_LOAD_STATE)) {
             *input >> args[0];
-            if (flashMemory->Load_State(args[0])) {
+            flashMemory = flashMemory->Load_State(args[0]);
+            if (flashMemory) {
                 *output << "Stav pameti byl nacten.\n";
+            } else {
+                *output << "Nepodarilo se nacist novy stav pameti.\n";
             }
         } else {
             *output << COM_UNKNOWN;
@@ -914,7 +923,7 @@ int main(int argc, char **argv) {
                     input = &input_file;
                     cout << "Otevrel jsem input.txt soubor." << endl;
                 } else
-                    cout << "Nepodarilo se otevrit soubor: " << argv[i + 1] << endl;
+                    cout << "Nepodarilo se vstupni otevrit soubor: " << argv[i + 1] << endl;
             } else if (strcmp(argv[i], PARAM_FILE_OUT) == 0) {
                 changed_input++;
                 output_file = ofstream(argv[i + 1]);
@@ -922,7 +931,7 @@ int main(int argc, char **argv) {
                     output = &output_file;
                     cout << "Otevrel jsem output soubor." << endl;
                 } else
-                    cout << "Nepodarilo se otevrit soubor: " << argv[i + 1] << endl;
+                    cout << "Nepodarilo se vystupni otevrit soubor: " << argv[i + 1] << endl;
             }
         }
 

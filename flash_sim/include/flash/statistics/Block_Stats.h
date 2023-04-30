@@ -22,11 +22,13 @@ private:
     /** Celkový čas smazání bloku. */
     float Total_Erase_Time = 0;
     /** Počet přečtených stránek v bloku. */
-    int Num_Of_Reads = 0;
+    size_t Num_Of_Reads = 0;
     /** Počet zapsaných stránek v bloku. */
-    int Num_Of_Writes = 0;
+    size_t Num_Of_Writes = 0;
     /** Počet smazání bloku. */
-    int Num_Of_Erases = 0;
+    size_t Num_Of_Erases = 0;
+    /** Počet poškozených stránek. */
+    size_t Num_Of_Bad_Pages = 0;
 
 public:
 
@@ -53,21 +55,25 @@ public:
 
     void addTotalEraseTime(float eraseTime);
 
-    int getNumOfReads() const;
+    size_t getNumOfReads() const;
 
-    void setNumOfReads(int numOfReads);
+    void setNumOfReads(size_t numOfReads);
 
-    void addNumOfReads(int numOfReads);
+    void addNumOfReads(size_t numOfReads);
 
-    int getNumOfWrites() const;
+    size_t getNumOfWrites() const;
 
-    void setNumOfWrites(int numOfWrites);
+    void setNumOfWrites(size_t numOfWrites);
 
-    void addNumOfWrites(int numOfWrites);
+    void addNumOfWrites(size_t numOfWrites);
 
-    int getNumOfErases() const;
+    size_t getNumOfErases() const;
 
-    void setNumOfErases(int numOfErases);
+    void setNumOfErases(size_t numOfErases);
 
-    void addNumOfErases(int numOfErases);
+    void addNumOfErases(size_t numOfErases);
+
+    size_t getNumOfBadPages() const;
+
+    void setNumOfBadPages(size_t numOfBadPages);
 };
