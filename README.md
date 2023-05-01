@@ -28,9 +28,9 @@ hodnota je 512 bytů.
     * LOCKED bit - určuje, zda je stránka uzamčená, pokud je uzamčená, nemůže být smazána nebo naprogramována (zatím není implementováno)
     * SECURITY bit - určuje, zda jsou data ve stránce šifrována nebo jinak zabezpečena (zatím není implementováno)
 
-Číslo bitu | 0   | 1    | 2     | 3       | 4 | 5 | 6 | 7 
---- |-----|------|-------|---------|---|---|---|--- 
-Význam | BAD | VALID | ERROR | LOCKED | SECURITY | - | - | -
+| Číslo bitu | 0   | 1     | 2     | 3      | 4        | 5 | 6 | 7 |
+|------------|-----|-------|-------|--------|----------|---|---|---|
+| Význam     | BAD | VALID | ERROR | LOCKED | SECURITY | - | - | - |
 
 ### Blok
 
@@ -39,9 +39,19 @@ spuštění simulace.
 
 ### Status registr
 
-Číslo bitu | 0   | 1    | 2     | 3       | 4 | 5 | 6 | 7 
---- |-----|------|-------|---------|---|---|---|--- 
-Význam | BAD | VALID | ERROR | LOCKED | SECURITY | - | - | -
+| Číslo bitu | 0   | 1     | 2   | 3  | 4  | 5  | 6   | 7 |
+|------------|-----|-------|-----|----|----|----|-----|---|
+| Význam     | WP | BP | EPE | RB | ES | PT | ECC | - |
+
+#### Význam jednotlivých bitů
+
+* WP - Write Protect: Indikuje ochranu paměti před zápisem.
+* BP - Block Protect: Indikuje ochranu daného bloku před zápisem.
+* EPE - Erase Program Error: Indikuje chybu při poslední operaci čtení nebo zápis.
+* RB - Ready/Busy: Indikuje, že pamět právě provádí operaci nebo že je připravena k použití.
+* ES - Erase Suspend: Indikuje pozastavení možnosti mazání bloku např. pokud má paměť malý přísun energie.
+* PT - Programming Time-out: Indikuje timeout u poslední operace zápisu.
+* ECC - ECC/Checksum: Indikuje chybu ECC nebo checksumy.
 
 ### ECC
 
@@ -66,7 +76,7 @@ Error Correction Code - slouží k detekci chyby stránky nebo bloku.
 
 ### TODO
 *[x] Zápis a čtení dat do souboru.
-*[ ] Status registr.
+*[x] Status registr.
 *[ ] Ukládání a čtení cache před a po save_state.
 *[ ] Logika ECC a ostatních spare dat.
 *[ ] Histogram na všech úrovních.

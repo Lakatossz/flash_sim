@@ -154,6 +154,14 @@ using json = nlohmann::json;
 #define DEFAULT_COM_TIME 15
 #define DEFAULT_BAD_BLOCKS_FACTORY 12
 
+#define STATUS_FLAG_WP 0
+#define STATUS_FLAG_BP 1
+#define STATUS_FLAG_EPE 2
+#define STATUS_FLAG_RB 3
+#define STATUS_FLAG_ES 4
+#define STATUS_FLAG_PT 5
+#define STATUS_FLAG_ECC 6
+
 /**
  * Definice výčtového typu představující typ buňky paměti.
  * Do budoucna by mohl určovat poruchovost, chybovost, životnost.
@@ -200,7 +208,8 @@ typedef struct nand_metadata_struct {
     size_t block_wear_size = 32; /** Velikost bitů pro pole počítadla wear-levelingu. */
     size_t md_p_size = 3; /** Celkový počet metadat jedné stránky 16b pro ECC + 8b navic napr pro valid bit. */
     size_t md_b_size = 5 + block_wear_size; /** Celkový počet metadat jednoho bloku. */
-    u_char status = 0; /** 0. Device busy | 1. WEL | 5. EPE | 6. EPS | 7. ETM */
+    u_char status = 0; /** Status registr. */
+    size_t status_bits = 7; /** Počet bitů status registru. */
     NMem_Type mem_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
 
     // Dynamické parametry paměti.
@@ -279,12 +288,12 @@ public:
     /**
      * Vrátí data obsažené ve zvolené stránce do cache.
      */
-    int Read_Page(int_16 addr);
+    int Read_Page(int_16 addr) const;
 
     /**
      * Přečte sector o velikosti 512B na dané adrese do cache.
      */
-    int Read_Sector(int_16 addr);
+    int Read_Sector(int_16 addr) const;
 
     /**
      * Přečte obsahe cache paměti.
@@ -304,7 +313,7 @@ public:
     /**
      * Nastaví data do stránky dané adresou obsahem cache.
      */
-    int Program_Page(int_16 addr);
+    int Program_Page(int_16 addr) const;
 
     /**
      * Zapíše data do sectoru o velikosti 512B obsahem cache.
@@ -496,7 +505,7 @@ public:
     /**
      * Uloží data paměti do souboru.
      */
-    int Save_Memory(const string& file_name);
+    int Save_Memory(const string& file_name) const;
 
     /**
      * Uloží stav paměti do souboru.
@@ -506,18 +515,18 @@ public:
     /**
      * Načte data paměti ze souboru.
      */
-    int Load_Memory(const string& file_name);
+    int Load_Memory(const string& file_name) const;
 
     /**
      * Načte stav paměti ze souboru.
      */
-    Flash_Memory * Load_State(const string& file_name);
+    Flash_Memory * Load_State(const string& file_name) const;
 
     void Set_Id(uuid_t id);
 
-    u_char * Get_Data(int_32& size);
+    u_char * Get_Data(int_32& size) const;
 
     void Set_Data();
 
-    int_32 Get_True_Mem_Size();
+    int_32 Get_True_Mem_Size() const;
 };

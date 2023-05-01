@@ -5,6 +5,16 @@
 
 using namespace std;
 
+void writeStatus(ostream *output, const u_char status) {
+    *output << "WP: " << ((status >> 0) & 1) << endl;
+    *output << "BP: " << ((status >> 1) & 1) << endl;
+    *output << "EPE: " << ((status >> 2) & 1) << endl;
+    *output << "RB: " << ((status >> 3) & 1) << endl;
+    *output << "ES: " << ((status >> 4) & 1) << endl;
+    *output << "PT: " << ((status >> 5) & 1) << endl;
+    *output << "ECC: " << ((status >> 6) & 1) << endl;
+}
+
 void writeHead(ostream *output) {
     *output << "=================================================================" << endl;
 
@@ -309,7 +319,8 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             }
         } else if (command == string(COM_READ_STATUS)) {
             u_char data = flashMemory->Read_Status();
-            *output << "Status pameti je: " << data <<"\n";
+            *output << "Status pameti je: " << (int) data << endl;
+            writeStatus(output, data);
         } else if (command == string(COM_READ_ID)) {
             flashMemory->Read_ID();
             *output << "ID zařízení bylo přečteno.\n";
@@ -318,7 +329,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *input >> args[0];
                 *output << "adresa: " << (int16_t) stoi(args[0], nullptr, 16) << endl;
                 if (flashMemory->Program_Page((int16_t) stoi(args[0], nullptr, 16))) {
-                    *output << "Nepodarilo se provest operaci cteni statusu.\n";
+                    *output << "Nepodarilo se provest operaci zapisu.\n";
                     return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {

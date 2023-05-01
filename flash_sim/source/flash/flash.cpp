@@ -57,16 +57,22 @@ int_32 check_address(nand_memory m, int_16 addr) {
     if ((addr >> 8) >= m.md.num_of_blocks) {
         cout << (addr >> 8) << endl;
         cout << "Adresa bloku je příliš velká.\n";
-        m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
         /** Zkontroluju adresu stránky. */
     } else if ((addr & (uint8_t) ~0L) >= m.md.num_of_pages) {
         cout << "Adresa stránky je příliš velká.\n";
-        m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
+}
+
+int_32 set_status_flag(u_char *status, size_t status_bits, size_t index, bool value) {
+    if (index < status_bits) {
+        *status = *status | (u_char)(value << index);
+        return EXIT_SUCCESS;
+    }
+    return EXIT_FAILURE;
 }
 
 Flash_Memory::Flash_Memory()
@@ -134,6 +140,8 @@ int Flash_Memory::Flash_Init()
 
     m.data = new u_char[m.md.true_mem_size];
 
+    m.md.status = 0L;
+
 //    uuid_generate_random(m.md.id);
 
     cout << "Page size: " << m.md.page_size << endl;
@@ -161,6 +169,8 @@ int Flash_Memory::Flash_Init(u_char *data, int_32 size)
     m.data = new u_char(m.md.true_mem_size);
     memcpy(m.data, data, size);
 
+    m.md.status = 0L;
+
 //    uuid_generate_random(m.md.id);
 
     cout << "Page size: " << m.md.page_size << endl;
@@ -178,7 +188,7 @@ int Flash_Memory::Cache_Init() {
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Read_Page(int_16 addr)
+int Flash_Memory::Read_Page(int_16 addr) const
 {
     if (check_address(m, addr)) {
         cout << "Adresu nelze pouzit.\n";
@@ -188,7 +198,7 @@ int Flash_Memory::Read_Page(int_16 addr)
     int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
                      + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
-//    m.md.status = m.md.status | (1 << 5)
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
 
     /** Kontrola validace stránky - jestli je použitelná. */
     if (m.data[pointer + m.md.page_size] >> 0 == 1) {
@@ -200,7 +210,6 @@ int Flash_Memory::Read_Page(int_16 addr)
     /** cislo bloku + cislo stranky + 5. pozice znaku */
     if ((m.data[pointer + 1] >> 1) == 1) {
         cout << "Blok je již požkozený.\n";
-        m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
     }
 
@@ -220,10 +229,12 @@ int Flash_Memory::Read_Page(int_16 addr)
     m.md.blocks_stats[(addr >> 8)].addNumOfReads(1);
     m.md.mem_stats->addNumOfReads(1);
 
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Read_Sector(int_16 addr)
+int Flash_Memory::Read_Sector(int_16 addr) const
 {
     if (check_address(m, addr)) {
         cout << "Adresu nelze pouzit.\n";
@@ -233,7 +244,7 @@ int Flash_Memory::Read_Sector(int_16 addr)
     int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
                      + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
-//    m.md.status = m.md.status | (1 << 5)
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
 
     /** Kontrola validace stránky - jestli je použitelná. */
     if (m.data[pointer + m.md.page_size] >> 0 == 1) {
@@ -245,7 +256,6 @@ int Flash_Memory::Read_Sector(int_16 addr)
     /** cislo bloku + cislo stranky + 5. pozice znaku */
     if ((m.data[pointer + 1] >> 1) == 1) {
         cout << "Blok je již požkozený.\n";
-        m.md.status = m.md.status | (1 << 5);
         return EXIT_FAILURE;
     }
 
@@ -264,6 +274,8 @@ int Flash_Memory::Read_Sector(int_16 addr)
     m.md.pages_stats[page_stats_pointer].addNumOfReads(1);
     m.md.blocks_stats[(addr >> 8)].addNumOfReads(1);
     m.md.mem_stats->addNumOfReads(1);
+
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
 
     return EXIT_SUCCESS;
 }
@@ -290,18 +302,21 @@ uuid_t* Flash_Memory::Read_ID()
     return &m.md.id;
 }
 
-int Flash_Memory::Program_Page(int_16 addr)
+int Flash_Memory::Program_Page(int_16 addr) const
 {
-    if (check_address(m, addr))
+    if (check_address(m, addr)) {
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
+    }
 //    blok: (addr >> 8) stranka: (addr & (uint8_t) ~0L)
     int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
             + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
-    cout << "pointer: " << pointer << endl;
+
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
 
     /** Kontrola validace stránky - jestli je použitelná. */
     if (m.data[pointer + m.md.page_size] >> 1 == 1) {
-        m.md.status = m.md.status | (1 << 5);
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
@@ -322,20 +337,26 @@ int Flash_Memory::Program_Page(int_16 addr)
     m.md.blocks_stats[(addr >> 8)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
     return EXIT_SUCCESS;
 }
 
 int Flash_Memory::Program_Sector(int_16 addr)
 {
     if (check_address(m, addr)) {
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
     int_32 pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size)
                      + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size);
 
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+
     /** Kontrola validace stránky - jestli je použitelná. */
     if (m.data[pointer + m.md.page_size] >> 0 == 1) {
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
@@ -343,7 +364,7 @@ int Flash_Memory::Program_Sector(int_16 addr)
     /** cislo bloku + cislo stranky + 5. pozice znaku */
     if (m.data[pointer + 1] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
-        m.md.status = m.md.status | (1 << 5);
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
@@ -364,6 +385,8 @@ int Flash_Memory::Program_Sector(int_16 addr)
     m.md.blocks_stats[(addr >> 8)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
     return EXIT_SUCCESS;
 }
 
@@ -382,10 +405,14 @@ int Flash_Memory::Write_Cache(const string& data) const
 
 int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
 {
-    if (check_address(m, old_addr) || check_address(m, new_addr))
+    if (check_address(m, old_addr) || check_address(m, new_addr)) {
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
+    }
 
     int_32 old_pointer = old_addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
+
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
 
     /** Kontrola validace stránky - jestli je použitelná. */
     if (m.data[old_pointer + m.md.page_size] >> 0 == 1) {
@@ -396,7 +423,7 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     /** cislo bloku + cislo stranky + 5. pozice znaku */
     if (m.data[old_pointer + 1] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
-        m.md.status = m.md.status | (1 << 5);
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
@@ -418,6 +445,7 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
 
     /** Kontrola validace stránky - jestli je použitelná. */
     if (m.data[new_pointer + m.md.page_size] >> 0 == 1) {
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
@@ -425,7 +453,7 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     /** cislo bloku + cislo stranky + 5. pozice znaku */
     if (m.data[new_pointer + 1] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
-        m.md.status = m.md.status | (1 << 5);
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
@@ -446,6 +474,8 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
     m.md.blocks_stats[(new_addr >> 8)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
     return EXIT_SUCCESS;
 }
 
@@ -456,16 +486,19 @@ int Flash_Memory::Program_Data_Move(int_16 old_addr, int_16 new_addr)
 int Flash_Memory::Block_Erase(int_8 addr)
 {
     if (check_address(m, addr)) {
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
     int_32 pointer = addr * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size);
 
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+
     /** Zkontroluju, jestli je možné stránku ještě smazat. */
     /** cislo bloku + cislo stranky + 5. pozice znaku */
     if (m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] >> 1 == 1) {
         cout << "Blok je již požkozený.\n";
-        m.md.status = m.md.status | (1 << 5);
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
         return EXIT_FAILURE;
     }
 
@@ -480,6 +513,9 @@ int Flash_Memory::Block_Erase(int_8 addr)
             m.md.block_wear_size) == MAX_ERASE_NUMBER) {
         m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size]
         = m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] | (1 << 1);
+    } else {
+        set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        return EXIT_FAILURE;
     }
 
     /** Aktualizace času běhu. */
@@ -491,6 +527,8 @@ int Flash_Memory::Block_Erase(int_8 addr)
 
     increase_time(ERASE_TIME);
 
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+    set_status_flag((u_char *)&m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
     return EXIT_SUCCESS;
 }
 
@@ -501,7 +539,7 @@ int Flash_Memory::Reset()
     memset(m.md.pages_stats, 0, m.md.num_of_blocks * m.md.num_of_pages * sizeof(Page_Stats));
     memset(m.md.blocks_stats, 0, m.md.num_of_blocks * sizeof(Block_Stats));
 
-    m.md.status = 0;
+    m.md.status = 0L;
     m.md.num_of_bad_blocks = 0;
     m.md.num_of_bad_pages = 0;
     m.md.mem_stats->setNumOfReads(0);
@@ -720,65 +758,7 @@ int Flash_Memory::Num_Of_Bad_Pages() const
 
 string Flash_Memory::ECC_Histogram()
 {
-//        sort(&array[0], &array[n]);
-//        int index = 0, k = n, reduce = 1;
-//        double min = array[0], max = array[n - 1];
-//        if (k > 10)
-//            k = 50;
-//
-//        auto delta = (double) ((max - min) / k);
-//
-//        int *counted = (int *) malloc(sizeof(int) * k);
-//        if (!counted) {
-//            cout << "Neni dostatek pameti!\n";
-//            return;
-//        }
-//
-//
-//        if (n >= 2500) {
-//            reduce = 2;
-//            if (n >= 5000) {
-//                reduce = 5;
-//                if (n >= 10000) {
-//                    reduce = 10;
-//                    if (n >= 25000) {
-//                        reduce = 20;
-//                        if (n >= 50000) {
-//                            reduce = 50;
-//                            if (n >= 100000) {
-//                                reduce = 100;
-//                                if (n >= 250000) {
-//                                    reduce = 200;
-//                                    if (n >= 500000) {
-//                                        reduce = 500;
-//                                        if (n >= 1000000) {
-//                                            reduce = 1000;
-//                                        }
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//
-//        for (int i = 0; i < k; ++i) {
-//            while (array[index] >= (array[0] + (i * delta)) && array[index] <= (array[0] + (i + 1) * delta)) {
-//                ++counted[i];
-//                index++;
-//            }
-//        }
-//
-//        for (int i = 0; i < k; ++i) {
-//            cout << setw(8) << setprecision(3) << (array[0] + (i * delta))<< ": ";
-//            for (int j = 0; j < counted[i] / reduce; ++j) {
-//                cout << "*";
-//            }
-//            cout << endl;
-//        }
-//    }
+
 }
 
 int Flash_Memory::Num_Of_Writes() const
@@ -882,18 +862,13 @@ int Flash_Memory::Set_Erase_Time_Mem(float time) const
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Save_Memory(const string& file_name)
+int Flash_Memory::Save_Memory(const string& file_name) const
 {
     ofstream f(file_name, ios::out | ios::binary);
     if(!f) {
         cout << "Nepodarilo se otevrit soubor " << file_name << endl;
         return 1;
     }
-
-    ostream *output;
-    output = &f;
-
-//    *output << m.data;
 
     f.write((char *) m.data, m.md.true_mem_size);
 
@@ -970,7 +945,7 @@ int Flash_Memory::Save_State(const string& file_name)
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Load_Memory(const string& file_name)
+int Flash_Memory::Load_Memory(const string& file_name) const
 {
     ifstream f(file_name, ios::in | ios::binary);
     if (!f) {
@@ -998,7 +973,7 @@ int Flash_Memory::Load_Memory(const string& file_name)
 
 }
 
-Flash_Memory * Flash_Memory::Load_State(const string& file_name)
+Flash_Memory * Flash_Memory::Load_State(const string& file_name) const
 {
     ifstream f(file_name);
     if (!f) {
@@ -1064,13 +1039,13 @@ void Flash_Memory::Set_Id(uuid_t id) {
     memcpy(m.md.id, id, sizeof(uuid_t));
 }
 
-u_char * Flash_Memory::Get_Data(int_32& size) {
+u_char * Flash_Memory::Get_Data(int_32& size) const {
     auto data = new u_char(m.md.true_mem_size);
     memcpy(data, m.data, m.md.true_mem_size);
     size = m.md.true_mem_size;
     return data;
 }
 
-int_32 Flash_Memory::Get_True_Mem_Size() {
+int_32 Flash_Memory::Get_True_Mem_Size() const {
     return m.md.true_mem_size;
 }
