@@ -29,9 +29,9 @@ private:
     /** Čas pro komunikaci se stránkou paměti - spoje, atd. */
     float Com_Time;
     /** Počet čtení stránky. */
-    int Num_Of_Reads;
+    size_t Num_Of_Reads;
     /** Počet zápisů stránky. */
-    int Num_Of_Writes;
+    size_t Num_Of_Writes;
 
 public:
 
@@ -69,13 +69,13 @@ public:
 
     void addComTime(float comTime);
 
-    void setNumOfReads(int numOfReads);
+    void setNumOfReads(size_t numOfReads);
 
-    void addNumOfReads(int numOfReads);
+    void addNumOfReads(size_t numOfReads);
 
-    void setNumOfWrites(int numOfWrites);
+    void setNumOfWrites(size_t numOfWrites);
 
-    void addNumOfWrites(int numOfWrites);
+    void addNumOfWrites(size_t numOfWrites);
 
     float getPageProgTime() const;
 
@@ -89,7 +89,7 @@ public:
 
     float getComTime() const;
 
-    int getNumOfReads() const;
+    size_t getNumOfReads() const;
 
-    int getNumOfWrites() const;
+    size_t getNumOfWrites() const;
 };

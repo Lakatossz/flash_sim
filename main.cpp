@@ -13,6 +13,7 @@ void writeStatus(ostream *output, const u_char status) {
     *output << "ES: " << ((status >> 4) & 1) << endl;
     *output << "PT: " << ((status >> 5) & 1) << endl;
     *output << "ECC: " << ((status >> 6) & 1) << endl;
+    *output << "ERR: " << ((status >> 7) & 1) << endl;
 }
 
 void writeHead(ostream *output) {

@@ -11,12 +11,6 @@
 #include "../include/flash/statistics/Block_Stats.h"
 #include "../include/flash/statistics/Memory_Stats.h"
 
-typedef u_int32_t int_32;
-typedef u_int8_t int_8;
-typedef u_int16_t int_16;
-
-typedef std::basic_ofstream<unsigned char, std::char_traits<unsigned char> > uofstream;
-
 using namespace std;
 using json = nlohmann::json;
 
@@ -52,6 +46,7 @@ using json = nlohmann::json;
  */
 #define MAX_BLOCK_SIZE 10000
 #define MAX_PAGE_SIZE 1024
+#define MAX_SECTOR_SIZE MAX_PAGE_SIZE
 #define MAX_NUM_OF_BLOCK 128
 #define MAX_READ_PAGE_TIME 1000
 #define MAX_PAGE_PROG_TIME 1000
@@ -64,6 +59,7 @@ using json = nlohmann::json;
  */
 #define MIN_BLOCK_SIZE 1
 #define MIN_PAGE_SIZE 1
+#define MIN_SECTOR_SIZE 1
 #define MIN_NUM_OF_BLOCK 1
 #define MIN_READ_PAGE_TIME 1
 #define MIN_PAGE_PROG_TIME 1
@@ -144,7 +140,7 @@ using json = nlohmann::json;
  */
  /* Sector - minimální jednotka dat */
 #define DEFAULT_SECTOR_SIZE 512
-#define DEFAULT_PAGE_SIZE 512
+#define DEFAULT_PAGE_SIZE 1024
 #define DEFAULT_BLOCK_SIZE 8192
 #define DEFAULT_NUM_OF_BLOCKS 16
 //#define DEFAULT_READ_PAGE_TIME 10
@@ -154,6 +150,23 @@ using json = nlohmann::json;
 #define DEFAULT_COM_TIME 15
 #define DEFAULT_BAD_BLOCKS_FACTORY 12
 
+#define PAGE_SPARE_BAD 0
+#define PAGE_SPARE_VALID 1
+#define PAGE_SPARE_ERROR 2
+#define PAGE_SPARE_LOCKED 3
+#define PAGE_SPARE_SECURITY 4
+
+#define BLOCK_SPARE_BAD 0
+#define BLOCK_SPARE_VALID 1
+#define BLOCK_SPARE_ERASED 2
+#define BLOCK_SPARE_RESERVED 3
+#define BLOCK_SPARE_DIRTY 4
+#define BLOCK_SPARE_LOCKED 5
+#define BLOCK_SPARE_WORE_OUT 6
+#define BLOCK_SPARE_ERROR 7
+#define BLOCK_SPARE_PROG_SUSPEND 8
+#define BLOCK_SPARE_ERASE_SUSPEND 9
+
 #define STATUS_FLAG_WP 0
 #define STATUS_FLAG_BP 1
 #define STATUS_FLAG_EPE 2
@@ -161,6 +174,7 @@ using json = nlohmann::json;
 #define STATUS_FLAG_ES 4
 #define STATUS_FLAG_PT 5
 #define STATUS_FLAG_ECC 6
+#define STATUS_FLAG_ERR 7
 
 /**
  * Definice výčtového typu představující typ buňky paměti.
@@ -198,18 +212,21 @@ typedef enum Page_Metadata_Enum { // 8 + 16
 typedef struct nand_metadata_struct {
     // Statické parametry paměti.
     uuid_t id{}; /** Identifikátor paměti. */
+    size_t sector_size = DEFAULT_SECTOR_SIZE; /** Velikost sektoru stránky. */
+    size_t num_of_sectors = 0; /** Počet sektorů. */
     size_t page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
-    int_32 num_of_pages = 0; /** Počet stránek. */
+    size_t num_of_pages = 0; /** Počet stránek. */
     size_t block_size = DEFAULT_BLOCK_SIZE; /** Velikost bloku. */
-    int_32 num_of_blocks = DEFAULT_NUM_OF_BLOCKS; /** Počet bloků. */
+    size_t num_of_blocks = DEFAULT_NUM_OF_BLOCKS; /** Počet bloků. */
     size_t mem_size = 0; /** Velikost paměti. */
-    int_32 true_mem_size = 0; /** Počet bytů pameti. */
-    int_32 ecc_size = 16; /** Počet bitů ECC kódu. */
+    u_int32_t true_mem_size = 0; /** Počet bytů pameti. */
+    u_int32_t ecc_size = 16; /** Počet bitů ECC kódu. */
     size_t block_wear_size = 32; /** Velikost bitů pro pole počítadla wear-levelingu. */
+    size_t md_s_size = 1; /** Celkový počet metdat jednoho sektoru. */
     size_t md_p_size = 3; /** Celkový počet metadat jedné stránky 16b pro ECC + 8b navic napr pro valid bit. */
     size_t md_b_size = 5 + block_wear_size; /** Celkový počet metadat jednoho bloku. */
     u_char status = 0; /** Status registr. */
-    size_t status_bits = 7; /** Počet bitů status registru. */
+    size_t status_bits = 8; /** Počet bitů status registru. */
     NMem_Type mem_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
 
     // Dynamické parametry paměti.
@@ -249,9 +266,9 @@ public:
     /**
      * Vytvoří paměť s parametry danými vstupem programu.
      */
-    Flash_Memory(int_32 page_size,
-                 int_32 block_size,
-                 int_32 number_of_blocks,
+    Flash_Memory(size_t page_size,
+                 size_t block_size,
+                 size_t number_of_blocks,
                  NMem_Type memory_type,
                  float read_page_time,
                  float page_prog_time,
@@ -260,9 +277,9 @@ public:
     /**
      * Vytvoří paměť s parametry danými z načtení ze souboru.
      */
-    Flash_Memory(int_32 page_size,
-                 int_32 block_size,
-                 int_32 number_of_blocks,
+    Flash_Memory(size_t page_size,
+                 size_t block_size,
+                 size_t number_of_blocks,
                  NMem_Type memory_type);
 
     /**
@@ -278,7 +295,7 @@ public:
     /**
      * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
      */
-    int Flash_Init(u_char *data, int_32 size);
+    int Flash_Init(u_char *data, size_t size);
 
     /**
      * Připraví blok cache k použití.
@@ -288,12 +305,12 @@ public:
     /**
      * Vrátí data obsažené ve zvolené stránce do cache.
      */
-    int Read_Page(int_16 addr) const;
+    int Read_Page(u_int16_t addr) const;
 
     /**
-     * Přečte sector o velikosti 512B na dané adrese do cache.
+     * Přečte sector na dané adrese do cache.
      */
-    int Read_Sector(int_16 addr) const;
+    int Read_Sector(u_int32_t addr) const;
 
     /**
      * Přečte obsahe cache paměti.
@@ -313,12 +330,12 @@ public:
     /**
      * Nastaví data do stránky dané adresou obsahem cache.
      */
-    int Program_Page(int_16 addr) const;
+    int Program_Page(u_int16_t addr) const;
 
     /**
      * Zapíše data do sectoru o velikosti 512B obsahem cache.
      */
-    int Program_Sector(int_16 addr);
+    int Program_Sector(u_int32_t addr);
 
     /**
      * Zapíše data do cache.
@@ -328,13 +345,13 @@ public:
     /**
      * Přesune data uvnitř paměti.
      */
-    int Program_Data_Move(int_16 old_addr, int_16 new_addr);
+    int Program_Data_Move(u_int16_t old_addr, u_int16_t new_addr);
 
     /**
      * Vymaže blok na dane adrese.
      * Adresa ve formatu 16bit čísla: ||-|-|-|-|-Blok-|-|-|-|-|-|-|-Adresa-|-|-|-|-||
      */
-    int Block_Erase(int_8 block_address);
+    int Block_Erase(u_int8_t block_address);
 
     /**
      * Uvede paměť do původního stavu - paměť je prázdná.
@@ -345,107 +362,107 @@ public:
     /**
      * Vrátí počet zápisu do stránky na dané adrese.
      */
-    int Num_Of_Writes(int_16 addr) const;
+    size_t Num_Of_Writes(u_int16_t addr) const;
 
     /**
      * Vrátí počet čtení ze stránky na dané adrese.
      */
-    int Num_Of_Reads(int_16 addr) const;
+    size_t Num_Of_Reads(u_int16_t addr) const;
 
     /**
      * Vrátí ECC infromace stránky na dané adrese.
      */
-    u_char * ECC_Info(int_16 addr) const;
+    u_char * ECC_Info(u_int16_t addr) const;
 
     /**
      * Vrátí čas posledního čtení ze stránky na dané adrese.
      */
-    float Read_Time_Last(int_16 addr) const;
+    float Read_Time_Last(u_int16_t addr) const;
 
     /**
      * Vrátí čas posledního zápisu do stránky na dané adrese.
      */
-    float Program_Time_Last(int_16 addr) const;
+    float Program_Time_Last(u_int16_t addr) const;
 
     /**
      * Vrátí celkový čas čtení ze stránky na dané adrese.
      */
-    float Read_Time_Total(int_16 addr) const;
+    float Read_Time_Total(u_int16_t addr) const;
 
     /**
      * Vrátí celkový čas zápisu do stránky na dané adrese.
      */
-    float Program_Time_Total(int_16 addr) const;
+    float Program_Time_Total(u_int16_t addr) const;
 
     /**
      * Vrátí čas komunikace se stránkou na dané adrese.
      */
-    float Com_Total_Time(int_16 addr) const;
+    float Com_Total_Time(u_int16_t addr) const;
 
     /**
      * Vrátí počet mazání stránky na dané adrese.
      */
-    int Num_Of_Erases_Page(int_16 addr) const;
+    size_t Num_Of_Erases_Page(u_int16_t addr) const;
 
     /**
      * Vrátí sector status bloku na dané adrese. TODO
      */
-    u_char * Sector_Status_Block(int_16 addr) const;
+    u_char * Sector_Status_Block(u_int16_t addr) const;
 
     /**
      * Vrátí počet mazání bloku na dané adrese.
      */
-    int Num_Of_Erases_Block(int_16 addr) const;
+    size_t Num_Of_Erases_Block(u_int16_t addr) const;
 
     /**
      * Vrátí celkový čas mazání bloku na dané adrese.
      */
-    float Erase_Time_Total(int_16 addr) const;
+    float Erase_Time_Total(u_int16_t addr) const;
 
     /**
      * Vrátí čas posledního mazání bloku na dané adrese.
      */
-    float Erase_Time_Last(int_16 addr) const;
+    float Erase_Time_Last(u_int16_t addr) const;
 
     /**
      * Může být použit pro zjištění, zda-li je blok použitelný.
      */
-    bool Is_Bad_Block(int_16 addr) const;
+    bool Is_Bad_Block(u_int16_t addr) const;
 
     /**
      * Vrátí počet poškozených stránek v bloku na dané adrese.
      */
-    size_t Num_Of_Bad_Pages(int_8 addr) const;
+    size_t Num_Of_Bad_Pages(u_int8_t addr) const;
 
     /**
      * Histogram pro ECC všech stránek v bloku na dané adrese.
      */
-    string ECC_Histogram(int_16 addr) const;
+    string ECC_Histogram(u_int16_t addr) const;
 
     /**
      * Vrátí počet zápisů do stránek v bloku na dané adrese.
      */
-    int Num_Of_Writes_Page(int_16 addr) const;
+    size_t Num_Of_Writes_Page(u_int16_t addr) const;
 
     /**
      * Vrátí počet čtení stránek v bloku na dané adrese.
      */
-    int Num_Of_Reads_Page(int_16 addr) const;
+    size_t Num_Of_Reads_Page(u_int16_t addr) const;
 
     /**
      * Vrátí sector statusy stránek v bloku na dané adrese. TODO
      */
-    u_char * Sector_Status_Page(int_16 addr) const;
+    u_char * Sector_Status_Page(u_int32_t addr) const;
 
     /**
      * Vrátí počet poškozených bloků v paměti.
      */
-    int Num_Of_Bad_Blocks() const;
+    size_t Num_Of_Bad_Blocks() const;
 
     /**
      * Vrátí počet poškozených stránek v paměti.
      */
-    int Num_Of_Bad_Pages() const;
+    size_t Num_Of_Bad_Pages() const;
 
     /**
      * Vrátí ECC histrogram ze všech stránek v paměti.
@@ -455,22 +472,22 @@ public:
     /**
      * Vrátí počet zápisů do paměti.
      */
-    int Num_Of_Writes() const;
+    size_t Num_Of_Writes() const;
 
     /**
      * Vrátí počet čtení z paměti.
      */
-    int Num_Of_Reads() const;
+    size_t Num_Of_Reads() const;
 
     /**
      * Nastaví čas zápisu do stránky na dané adrese.
      */
-    int Set_Prog_Time_Page(int_16 addr, float time) const;
+    int Set_Prog_Time_Page(u_int16_t addr, float time) const;
 
     /**
      * Nastaví čas zápisu v celém bloku na dané adrese.
      */
-    int Set_Prog_Time_Block(int_16 addr, float time) const;
+    int Set_Prog_Time_Block(u_int16_t addr, float time) const;
 
     /**
      * Nastaví čas zápisu v paměti.
@@ -480,12 +497,12 @@ public:
     /**
      * Nastaví čas čtení do stránky na dané adrese.
      */
-    int Set_Read_Time_Page(int_16 addr, float time) const;
+    int Set_Read_Time_Page(u_int16_t addr, float time) const;
 
     /**
      * Nastaví čas čtení v celém bloku na dané adrese.
      */
-    int Set_Read_Time_Block(int_16 addr, float time) const;
+    int Set_Read_Time_Block(u_int16_t addr, float time) const;
 
     /**
      * Nastaví čas čtení v paměti.
@@ -495,7 +512,7 @@ public:
     /**
      * Nastaví čas mazání v celém bloku na dané adrese.
      */
-    int Set_Erase_Time_Block(int_16 addr, float time) const;
+    int Set_Erase_Time_Block(u_int16_t addr, float time) const;
 
     /**
      * Nastaví čas mazání v paměti.
@@ -524,9 +541,9 @@ public:
 
     void Set_Id(uuid_t id);
 
-    u_char * Get_Data(int_32& size) const;
+    u_char * Get_Data(size_t& size) const;
 
     void Set_Data();
 
-    int_32 Get_True_Mem_Size() const;
+    size_t Get_True_Mem_Size() const;
 };

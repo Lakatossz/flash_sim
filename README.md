@@ -22,7 +22,7 @@ hodnota je 512 bytů.
 * Jako velikost spare dat jedné stránky bylo zvoleno 24 bitů, tady 3 Byty.
   * 16 bitů pro ECC - zabezpečení dat stránky.
   * 8 bitů pro bitové data 
-    * BAD bit - určuje, zda je stránka poškozená, tedy zdaj jde vůbec použít
+    * BAD bit - určuje, zda je stránka poškozená, tedy zda ji lze vůbec použít
     * VALID bit - určuje, zda jsou data stránky validní nebo zda je dostupná pro zápis
     * ERROR bit - určuje, zda došlo při programování nebo mazání k chybě (zatím není implementováno)
     * LOCKED bit - určuje, zda je stránka uzamčená, pokud je uzamčená, nemůže být smazána nebo naprogramována (zatím není implementováno)
@@ -37,21 +37,42 @@ hodnota je 512 bytů.
 * Minimální mazací jednotka. Obsahuje několik stránek. Její velikost může být změněna při
 spuštění simulace.
 
+#### Spare Data
+
+* Jako velikost spare dat jedné stránky bylo zvoleno 24 bitů, tady 3 Byty.
+  * 16 bitů pro ECC - zabezpečení dat stránky.
+  * 10 bitů pro bitové data
+    * BAD bit - určuje, zda je blok poškozen, tedy zda ho jde vůbec použít
+    * VALID bit - určuje, zda jsou data bloku validní nebo zda je dostupná pro mazání
+    * ERASED bit - určuje, zda došlo je obsah bloku smazán
+    * RESERVED bit - určuje, zda je blok rezervován pro zvláštní účely (zatím není implementováno)
+    * DIRTY bit - určuje, zda byly data bloku změněna (zatím není implementováno)
+    * LOCKED bit - určuje, zda blok uzamčen (zatím není implementováno)
+    * WORE_OUT bit - určuje, zda byl blok smazán tolikrát, že již nelze použít
+    * ERROR bit - určuje, zda došlo při mazání k chybě (zatím není implementováno)
+    * PROG_SUSPEND - určuje, zda je zakázáno programovat stránky bloku (zatím neimplementováno)
+    * ERASE_SUSPEND - určuje, zda je zakázáno mazat obsah bloku (zatím neimplementováno)
+
+| Číslo bitu | 0   | 1     | 2      | 3        | 4     | 5      | 6        | 7     | 8           | 9              |
+|------------|-----|-------|--------|----------|-------|--------|----------|-------|-------------|----------------|
+| Význam     | BAD | VALID | ERASED | RESERVED | DIRTY | LOCKED | WORE_OUT | ERROR | PROG_SUSPEND | ERASE_SUSPEND  |
+
 ### Status registr
 
-| Číslo bitu | 0   | 1     | 2   | 3  | 4  | 5  | 6   | 7 |
-|------------|-----|-------|-----|----|----|----|-----|---|
-| Význam     | WP | BP | EPE | RB | ES | PT | ECC | - |
+| Číslo bitu | 0   | 1     | 2   | 3  | 4  | 5  | 6   | 7   |
+|------------|-----|-------|-----|----|----|----|-----|-----|
+| Význam     | WP | BP | EPE | RB | ES | PT | ECC | ERR |
 
 #### Význam jednotlivých bitů
 
 * WP - Write Protect: Indikuje ochranu paměti před zápisem.
 * BP - Block Protect: Indikuje ochranu daného bloku před zápisem.
-* EPE - Erase Program Error: Indikuje chybu při poslední operaci čtení nebo zápis.
+* EPE - Erase Program Error: Indikuje chybu při poslední operaci mazání nebo zápis.
 * RB - Ready/Busy: Indikuje, že pamět právě provádí operaci nebo že je připravena k použití.
 * ES - Erase Suspend: Indikuje pozastavení možnosti mazání bloku např. pokud má paměť malý přísun energie.
 * PT - Programming Time-out: Indikuje timeout u poslední operace zápisu.
 * ECC - ECC/Checksum: Indikuje chybu ECC nebo checksumy.
+* ERR - Error: Indikuje ostatní chyby.
 
 ### ECC
 

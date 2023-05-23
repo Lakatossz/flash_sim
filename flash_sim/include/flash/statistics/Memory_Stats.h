@@ -1,25 +1,27 @@
 #pragma once
 
+#include <cstddef>
+
 /**
  * Definice třídy reprezentující statistiky paměti.
  */
 class Memory_Stats {
 private:
     /** Počet čtení stránek z paměti. */
-    int Num_Of_Reads;
+    size_t Num_Of_Reads;
     /** Počet zápisů stránek do paměti. */
-    int Num_Of_Writes;
+    size_t Num_Of_Writes;
 
 public:
-    int getNumOfReads() const;
+    size_t getNumOfReads() const;
 
-    void setNumOfReads(int numOfReads);
+    void setNumOfReads(size_t numOfReads);
 
-    void addNumOfReads(int numOfReads);
+    void addNumOfReads(size_t numOfReads);
 
-    int getNumOfWrites() const;
+    size_t getNumOfWrites() const;
 
-    void setNumOfWrites(int numOfWrites);
+    void setNumOfWrites(size_t numOfWrites);
 
-    void addNumOfWrites(int numOfWrites);
+    void addNumOfWrites(size_t numOfWrites);
 };

@@ -45,11 +45,11 @@ float Page_Stats::getComTime() const {
     return Com_Time;
 }
 
-int Page_Stats::getNumOfReads() const {
+size_t Page_Stats::getNumOfReads() const {
     return Num_Of_Reads;
 }
 
-int Page_Stats::getNumOfWrites() const {
+size_t Page_Stats::getNumOfWrites() const {
     return Num_Of_Writes;
 }
 
@@ -81,11 +81,11 @@ void Page_Stats::setComTime(float comTime) {
     Com_Time = comTime;
 }
 
-void Page_Stats::setNumOfReads(int numOfReads) {
+void Page_Stats::setNumOfReads(size_t numOfReads) {
     Num_Of_Reads = numOfReads;
 }
 
-void Page_Stats::setNumOfWrites(int numOfWrites) {
+void Page_Stats::setNumOfWrites(size_t numOfWrites) {
     Num_Of_Writes = numOfWrites;
 }
 
@@ -117,10 +117,10 @@ void Page_Stats::addComTime(float comTime) {
     Com_Time += comTime;
 }
 
-void Page_Stats::addNumOfReads(int numOfReads) {
+void Page_Stats::addNumOfReads(size_t numOfReads) {
     Num_Of_Reads += numOfReads;
 }
 
-void Page_Stats::addNumOfWrites(int numOfWrites) {
+void Page_Stats::addNumOfWrites(size_t numOfWrites) {
     Num_Of_Writes += numOfWrites;
 }
