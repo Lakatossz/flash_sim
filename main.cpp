@@ -39,15 +39,15 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
      * Všechny možné parametry - mají přiřazeny defaultní hodnoty. Na konci se zavolá konstruktor
      * se všemi parametry - Změna se projeví jen u předefinovaných.
      */
-    int_32 page_size = DEFAULT_PAGE_SIZE;
-    int_32 block_size = DEFAULT_BLOCK_SIZE;
-    int_32 num_of_blocks = DEFAULT_NUM_OF_BLOCKS;
+    size_t page_size = DEFAULT_PAGE_SIZE;
+    size_t block_size = DEFAULT_BLOCK_SIZE;
+    size_t num_of_blocks = DEFAULT_NUM_OF_BLOCKS;
     float read_page_time = DEFAULT_READ_PAGE_TIME;
     float page_prog_time = DEFAULT_PAGE_PROG_TIME;
     float erase_time = DEFAULT_ERASE_TIME;
     NMem_Type type = DEFAULT_MEM_TYPE;
     string type_s = "slc";
-    int_32 bad_blocks_fact = DEFAULT_BAD_BLOCKS_FACTORY;
+    size_t bad_blocks_fact = DEFAULT_BAD_BLOCKS_FACTORY;
     float max_read_page_time = MAX_READ_PAGE_TIME;
     float max_page_prog_time = MAX_PAGE_PROG_TIME;
     float max_erase_time = MAX_ERASE_TIME;
@@ -55,7 +55,7 @@ Flash_Memory * specifyMemory(int argc, char **argv, ostream *output) {
     float min_page_prog_time = MIN_PAGE_PROG_TIME;
     float min_erase_time = MIN_ERASE_TIME;
     float com_time = DEFAULT_COM_TIME;
-    int_32 max_erase_num = MAX_ERASE_NUMBER;
+    size_t max_erase_num = MAX_ERASE_NUMBER;
 
 
     /**
@@ -513,12 +513,11 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_SECTOR_STATUS_BLOCK)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0], nullptr, 16));
-                if (data) {
-                    *output << "Doplnit :D.\n";
-                    free(data);
+                string data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0], nullptr, 16));
+                if (!data.empty()) {
+                    *output << "Status sectoru stranky je: " << data << "(zapis, error)";
                 } else {
-                    *output << "Nepodarilo se provest operaci status sektoru bloku.\n";
+                    *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
                     return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
@@ -570,7 +569,7 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_IS_BAD_BLOCK)) {
             try {
                 *input >> args[0];
-                bool_value = flashMemory->Is_Bad_Block((int16_t) stoi(args[0], nullptr, 16));
+                bool_value = flashMemory->Is_Bad_Block((u_int8_t) stoi(args[0], nullptr, 16));
                 if (bool_value) {
                     *output << "Blok na adrese " << args[0] << " je spatny: " << bool_value << endl;
                 } else {
@@ -640,11 +639,10 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_SECTOR_STATUS_PAGE)) {
             try {
                 *input >> args[0];
-                u_char *data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0],
+                string data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0],
                                                                                nullptr, 16));
-                if (data) {
-                    *output << "Doplnit :D.\n";
-                    free(data);
+                if (!data.empty()) {
+                    *output << "Status sectoru bloku je: " << data << "(mazani, zapis, error)";
                 } else {
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
                     return EXIT_FAILURE;
@@ -688,6 +686,19 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                     return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                }
+            } catch (const std::invalid_argument & e) {
+                *output << "Parametr musi byt cislo!\n";
+                return EXIT_FAILURE;
+            }
+        } else if (command == string(COM_MEM_STATUS_PAGE)) {
+            try {
+                string data = flashMemory->Sector_Status_Memory();
+                if (!data.empty()) {
+                    *output << "Status sectoru pameti je: " << data << "(zapis, error)";
+                } else {
+                    *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
+                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";

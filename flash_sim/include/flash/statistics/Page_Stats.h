@@ -9,6 +9,8 @@
 #define DEFAULT_READ_PAGE_TIME 10
 #define DEFAULT_PAGE_PROG_TIME 15
 
+#define PAGE_ECC_SIZE 5
+
 /**
  * Definice třídy reprezentující statistiky stránky.
  */
@@ -32,6 +34,10 @@ private:
     size_t Num_Of_Reads;
     /** Počet zápisů stránky. */
     size_t Num_Of_Writes;
+    /** Počet chyb stránky. */
+    size_t Num_Of_Errors;
+    /** Histogram ECC oprav ve strance. */
+    size_t ECC_Histogram[PAGE_ECC_SIZE];
 
 public:
 
@@ -92,4 +98,10 @@ public:
     size_t getNumOfReads() const;
 
     size_t getNumOfWrites() const;
+
+    size_t* getHistogram();
+
+    size_t getNumOfErrors() const;
+
+    void setNumOfErrors(size_t numOfErrors);
 };

@@ -124,3 +124,15 @@ void Page_Stats::addNumOfReads(size_t numOfReads) {
 void Page_Stats::addNumOfWrites(size_t numOfWrites) {
     Num_Of_Writes += numOfWrites;
 }
+
+size_t* Page_Stats::getHistogram() {
+    return this->ECC_Histogram;
+}
+
+size_t Page_Stats::getNumOfErrors() const {
+    return Num_Of_Errors;
+}
+
+void Page_Stats::setNumOfErrors(size_t numOfErrors) {
+    Num_Of_Errors = numOfErrors;
+}

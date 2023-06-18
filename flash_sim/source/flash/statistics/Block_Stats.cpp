@@ -88,3 +88,15 @@ size_t Block_Stats::getNumOfBadPages() const {
 void Block_Stats::setNumOfBadPages(size_t numOfBadPages) {
     Num_Of_Bad_Pages = numOfBadPages;
 }
+
+size_t* Block_Stats::getHistogram() {
+    return this->ECC_Histogram;
+}
+
+size_t Block_Stats::getNumOfErrors() const {
+    return Num_Of_Errors;
+}
+
+void Block_Stats::setNumOfErrors(size_t numOfErrors) {
+    Num_Of_Errors = numOfErrors;
+}

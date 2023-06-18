@@ -72,10 +72,17 @@ bool check_flags(u_char *byte, size_t num_of_bits, size_t index) {
             (byte[(index / num_of_bits) + (index % num_of_bits)] & (1 << index));
 }
 
-u_int32_t set_flag(u_char *byte, size_t num_of_bits, size_t index, bool value) {
+u_int32_t set_flag(u_char *byte, size_t num_of_bits, size_t index) {
     if (byte && num_of_bits > 0 && index < num_of_bits) {
-        byte[(index / num_of_bits) + (index % num_of_bits)] =
-                byte[(index / num_of_bits) + (index % num_of_bits)] | (u_char)(value << index);
+        byte[(index / num_of_bits) + (index % num_of_bits)] |= (u_char)(1UL << index);
+        return EXIT_SUCCESS;
+    }
+    return EXIT_FAILURE;
+}
+
+u_int32_t clear_flag(u_char *byte, size_t num_of_bits, size_t index) {
+    if (byte && num_of_bits > 0 && index < num_of_bits) {
+        byte[(index / num_of_bits) + (index % num_of_bits)] &= ~(u_char)(1UL << index);
         return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;
@@ -95,20 +102,30 @@ Flash_Memory::Flash_Memory()
     m.md.pages_stats = new Page_Stats[m.md.num_of_pages * m.md.num_of_blocks];
     m.md.blocks_stats = new Block_Stats[m.md.num_of_blocks];
 }
+
+
 Flash_Memory::Flash_Memory(size_t page_size, size_t block_size, size_t number_of_blocks, NMem_Type memory_type,
                            float read_page_time, float page_prog_time, float erase_time)
 {
+    /** Kontrola parametrů paměti. * TODO dodelat kontrolu
+    if (block_size % page_size != 0 || page_size % m.md.sector_size != 0) {
+        cout << "Nevalidni parametry pameti!\n";
+        return;
+    }*/
+
+    m.md.num_of_sectors = page_size / m.md.sector_size;
     m.md.page_size = page_size;
     m.md.block_size = block_size;
     m.md.num_of_blocks = number_of_blocks;
     m.md.mem_type = memory_type;
 
+    /** Je potreba znovu vytvorit pole pro staty. */
     delete(m.md.pages_stats);
     delete(m.md.blocks_stats);
-
     m.md.pages_stats = new Page_Stats[m.md.num_of_pages * m.md.num_of_blocks];
     m.md.blocks_stats = new Block_Stats[m.md.num_of_blocks];
 
+    /** A také nastavit nadefinované časy. */
     for (int i = 0; i < m.md.num_of_pages; ++i) {
         m.md.pages_stats[i].setReadPageTime(read_page_time);
         m.md.pages_stats[i].setPageProgTime(page_prog_time);
@@ -126,9 +143,9 @@ Flash_Memory::Flash_Memory(size_t page_size, size_t block_size, size_t number_of
     m.md.num_of_blocks = number_of_blocks;
     m.md.mem_type = memory_type;
 
+    /** Je potreba znovu vytvorit pole pro staty. */
     delete(m.md.pages_stats);
     delete(m.md.blocks_stats);
-
     m.md.pages_stats = new Page_Stats[m.md.num_of_pages * m.md.num_of_blocks];
     m.md.blocks_stats = new Block_Stats[m.md.num_of_blocks];
 }
@@ -142,7 +159,7 @@ Flash_Memory::~Flash_Memory()
 
 int Flash_Memory::Flash_Init()
 {
-    /** Pocet stranek uvnitr bloku. */
+    /** Počet stránek uvnitř bloku. */
     m.md.num_of_pages = m.md.block_size / m.md.page_size;
 
     /** Počet bytů, které paměť obsahuje. */
@@ -222,21 +239,21 @@ int Flash_Memory::Read_Page(u_int16_t addr) const
                      + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
 
     if (!check_flags((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
     } else {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR);
         return EXIT_FAILURE;
     }
 
-    if (check_flags(&m.data[pointer + m.md.page_size + 1],
-                    m.md.ecc_size / sizeof(u_char), PAGE_SPARE_BAD) ||
-        !check_flags(&m.data[pointer + m.md.page_size + 1],
-                    m.md.ecc_size / sizeof(u_char), PAGE_SPARE_VALID)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
-        cout << "Stránka je poškozená.\n";
-         return EXIT_FAILURE;
-    }
+//    if (check_flags(&m.data[pointer + m.md.page_size + m.md.md_s_size * m.md.num_of_sectors + 1],
+//                    m.md.ecc_size / sizeof(u_char), PAGE_SPARE_BAD) ||
+//        !check_flags(&m.data[pointer + m.md.page_size + m.md.md_s_size * m.md.num_of_sectors + 1],
+//                    m.md.ecc_size / sizeof(u_char), PAGE_SPARE_VALID)) {
+//        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR);
+//        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
+//        cout << "Stránka je poškozená.\n";
+//         return EXIT_FAILURE;
+//    }
 
     memcpy(m.mem_cache, &m.data[pointer], m.md.page_size);
 
@@ -254,8 +271,10 @@ int Flash_Memory::Read_Page(u_int16_t addr) const
     m.md.blocks_stats[(addr >> 8)].addNumOfReads(1);
     m.md.mem_stats->addNumOfReads(1);
 
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
+
+    cout << check_flags((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB) << endl;
 
     return EXIT_SUCCESS;
 }
@@ -267,24 +286,25 @@ int Flash_Memory::Read_Sector(u_int32_t addr) const
         return EXIT_FAILURE;
     }
 
-    u_int32_t pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
-                        + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
+    u_int32_t pointer = (uint8_t)((addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size))
+               + (uint8_t) ((addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size))
+               + (addr & (uint8_t) ~0L) * (m.md.num_of_sectors * m.md.md_s_size);
 
     if (!check_flags((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
     } else {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR);
         return EXIT_FAILURE;
     }
 
     /* TODO - tady to bude fungovat trochu jinak nez u stranky. */
     if (check_ecc(reinterpret_cast<const u_char *>(&m.data[pointer + m.md.page_size + 1])
             , m.md.ecc_size / sizeof(u_char))) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ECC, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ECC);
         set_flag((u_char *) &m.data[pointer + m.md.page_size],
-                 m.md.md_p_size - m.md.ecc_size / sizeof(u_char), PAGE_SPARE_ERROR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+                 m.md.md_p_size - m.md.ecc_size / sizeof(u_char), PAGE_SPARE_ERROR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         return EXIT_FAILURE;
     }
 
@@ -292,13 +312,13 @@ int Flash_Memory::Read_Sector(u_int32_t addr) const
                     m.md.ecc_size / sizeof(u_char), PAGE_SPARE_BAD) ||
         !check_flags(&m.data[pointer + m.md.page_size + 1],
                      m.md.ecc_size / sizeof(u_char), PAGE_SPARE_VALID)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         cout << "Sektor je poškozený.\n";
         return EXIT_FAILURE;
     }
 
-    memcpy(m.mem_cache, &m.data[pointer], DEFAULT_SECTOR_SIZE);
+    memcpy(m.mem_cache, &m.data[pointer], m.md.sector_size);
 
     size_t page_stats_pointer = (addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L);
 
@@ -314,8 +334,8 @@ int Flash_Memory::Read_Sector(u_int32_t addr) const
     m.md.blocks_stats[(addr >> 8)].addNumOfReads(1);
     m.md.mem_stats->addNumOfReads(1);
 
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
 
     return EXIT_SUCCESS;
 }
@@ -345,18 +365,19 @@ uuid_t* Flash_Memory::Read_ID()
 int Flash_Memory::Program_Page(u_int16_t addr) const
 {
     if (check_address(m, addr)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
     }
+
 //    blok: (addr >> 8) stranka: (addr & (uint8_t) ~0L)
     u_int32_t pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
-                        + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
+            + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
+            + (addr & (uint8_t) ~0L) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
 
     if (!check_flags((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
     } else {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
     }
 
@@ -364,9 +385,9 @@ int Flash_Memory::Program_Page(u_int16_t addr) const
                     m.md.ecc_size / sizeof(u_char), PAGE_SPARE_BAD) ||
         check_flags(&m.data[pointer + m.md.page_size + 1],
                      m.md.ecc_size / sizeof(u_char), PAGE_SPARE_VALID)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, PAGE_SPARE_ERROR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, PAGE_SPARE_ERROR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         cout << "Stránka je poškozená.\n";
         return EXIT_FAILURE;
     }
@@ -388,27 +409,27 @@ int Flash_Memory::Program_Page(u_int16_t addr) const
     m.md.blocks_stats[(addr >> 8)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
     return EXIT_SUCCESS;
 }
 
 int Flash_Memory::Program_Sector(u_int32_t addr)
 {
     if (check_address(m, addr)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
     }
 
-    u_int32_t pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
-                        + (addr & (uint8_t) ~0L)
-                        * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
+    u_int32_t pointer = (uint8_t)((addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+                                                  + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size))
+                + (uint8_t) ((addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size))
+                + (addr & (uint8_t) ~0L) * (m.md.num_of_sectors * m.md.md_s_size);
 
     if (!check_flags((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
     } else {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
     }
 
@@ -416,14 +437,14 @@ int Flash_Memory::Program_Sector(u_int32_t addr)
                     m.md.ecc_size / sizeof(u_char), PAGE_SPARE_BAD) ||
         check_flags(&m.data[pointer + m.md.page_size + 1],
                     m.md.ecc_size / sizeof(u_char), PAGE_SPARE_VALID)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, PAGE_SPARE_ERROR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, PAGE_SPARE_ERROR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         cout << "Stránka je poškozená.\n";
         return EXIT_FAILURE;
     }
 
-    memcpy(&m.data[pointer], m.mem_cache, DEFAULT_SECTOR_SIZE);
+    memcpy(&m.data[pointer], m.mem_cache, m.md.sector_size);
 
     size_t page_stats_pointer = (addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L);
 
@@ -440,8 +461,8 @@ int Flash_Memory::Program_Sector(u_int32_t addr)
     m.md.blocks_stats[(addr >> 8)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
     return EXIT_SUCCESS;
 }
 
@@ -461,7 +482,7 @@ int Flash_Memory::Write_Cache(const string& data) const
 int Flash_Memory::Program_Data_Move(u_int16_t old_addr, u_int16_t new_addr)
 {
     if (check_address(m, old_addr) || check_address(m, new_addr)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
     }
 
@@ -471,27 +492,27 @@ int Flash_Memory::Program_Data_Move(u_int16_t old_addr, u_int16_t new_addr)
                         * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
 
     if (!check_flags((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
     } else {
         set_flag((u_char *) &m.data[old_pointer + m.md.page_size],
-                 m.md.md_p_size - m.md.ecc_size / sizeof(u_char), PAGE_SPARE_ERROR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+                 m.md.md_p_size - m.md.ecc_size / sizeof(u_char), PAGE_SPARE_ERROR);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
     }
 
     if (check_ecc(reinterpret_cast<const u_char *>(&m.data[old_pointer + m.md.page_size + 1])
             , m.md.ecc_size / sizeof(u_char))) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ECC, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ECC);
         set_flag((u_char *) &m.data[old_pointer + m.md.page_size],
-                 m.md.md_p_size - m.md.ecc_size / sizeof(u_char), PAGE_SPARE_ERROR, true);
+                 m.md.md_p_size - m.md.ecc_size / sizeof(u_char), PAGE_SPARE_ERROR);
     }
 
     if (check_flags(&m.data[old_pointer + m.md.page_size + 1],
                     m.md.ecc_size / sizeof(u_char), PAGE_SPARE_BAD) ||
         !check_flags(&m.data[old_pointer + m.md.page_size + 1],
                      m.md.ecc_size / sizeof(u_char), PAGE_SPARE_VALID)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_ERR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         cout << "Sektor je poškozený.\n";
         return EXIT_FAILURE;
     }
@@ -520,9 +541,9 @@ int Flash_Memory::Program_Data_Move(u_int16_t old_addr, u_int16_t new_addr)
                     m.md.ecc_size / sizeof(u_char), PAGE_SPARE_BAD) ||
         check_flags(&m.data[new_pointer + m.md.page_size + 1],
                     m.md.ecc_size / sizeof(u_char), PAGE_SPARE_VALID)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, PAGE_SPARE_ERROR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, PAGE_SPARE_ERROR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         cout << "Stránka je poškozená.\n";
         return EXIT_FAILURE;
     }
@@ -545,15 +566,15 @@ int Flash_Memory::Program_Data_Move(u_int16_t old_addr, u_int16_t new_addr)
     m.md.blocks_stats[(new_addr >> 8)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
     return EXIT_SUCCESS;
 }
 
 int Flash_Memory::Block_Erase(u_int8_t addr)
 {
     if (check_address(m, addr)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
     }
 
@@ -561,9 +582,9 @@ int Flash_Memory::Block_Erase(u_int8_t addr)
             + m.md.num_of_pages * m.md.md_p_size + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size);
 
     if (!check_flags((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
     } else {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
     }
 
     if (check_flags(&m.data[pointer + m.md.block_size + m.md.page_size * m.md.md_p_size + 1],
@@ -578,9 +599,9 @@ int Flash_Memory::Block_Erase(u_int8_t addr)
                     m.md.ecc_size / sizeof(u_char), BLOCK_SPARE_WORE_OUT) ||
         check_flags(&m.data[pointer + m.md.block_size + m.md.page_size * m.md.md_p_size + 1],
                     m.md.ecc_size / sizeof(u_char), BLOCK_SPARE_RESERVED)) {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, BLOCK_SPARE_ERROR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, BLOCK_SPARE_ERROR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         cout << "Blok je poškozený.\n";
         return EXIT_FAILURE;
     }
@@ -597,9 +618,9 @@ int Flash_Memory::Block_Erase(u_int8_t addr)
         m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size]
         = m.data[pointer + m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size] | (1 << 1);
     } else {
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, BLOCK_SPARE_ERROR, true);
-        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
+        set_flag((u_char *) &m.md.status, m.md.status_bits, BLOCK_SPARE_ERROR);
+        clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
         cout << "Blok je poškozený - wore out.\n";
         return EXIT_FAILURE;
     }
@@ -613,8 +634,8 @@ int Flash_Memory::Block_Erase(u_int8_t addr)
 
     increase_time(ERASE_TIME);
 
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB, false);
-    set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE, false);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_RB);
+    clear_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
     return EXIT_SUCCESS;
 }
 
@@ -658,8 +679,6 @@ u_char * Flash_Memory::ECC_Info(u_int16_t addr) const
     if (check_address(m, addr)) {
         return nullptr;
     }
-
-    // TODO - doimplementovat
 
     u_int32_t pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
             + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
@@ -731,18 +750,18 @@ size_t Flash_Memory::Num_Of_Erases_Page(u_int16_t addr) const
     return m.md.blocks_stats[(addr >> 8)].getNumOfErases();
 }
 
-u_char * Flash_Memory::Sector_Status_Block(u_int16_t addr) const
+string Flash_Memory::Sector_Status_Block(u_int16_t addr) const
 {
     if (check_address(m, addr)) {
         return nullptr;
     }
 
-    u_int32_t pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
-                        + (addr & (uint8_t) ~0L)
-                        * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
+    string s;
+    s.append(string(reinterpret_cast<const char *>(m.md.blocks_stats[(addr >> 8)].getNumOfErases())) + " ");
+    s.append(string(reinterpret_cast<const char *>(m.md.blocks_stats[(addr >> 8)].getNumOfWrites())) + " ");
+    s.append(string(reinterpret_cast<const char *>(m.md.blocks_stats[(addr >> 8)].getNumOfErrors())));
 
-    // TODO - doimplementovat
+    return s;
 }
 
 size_t Flash_Memory::Num_Of_Erases_Block(u_int16_t addr) const
@@ -771,19 +790,19 @@ float Flash_Memory::Erase_Time_Last(u_int16_t addr) const
 
     return m.md.blocks_stats[(addr >> 8)].getLastEraseTime();
 }
-
-bool Flash_Memory::Is_Bad_Block(u_int16_t addr) const
+// TODO maybe?
+bool Flash_Memory::Is_Bad_Block(u_int8_t addr) const
 {
     if (check_address(m, addr)) {
         return false;
     }
 
-    u_int32_t pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
-                        + (addr & (uint8_t) ~0L)
-                        * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
+    u_int32_t pointer = addr * (m.md.block_size + m.md.md_b_size
+            + m.md.num_of_pages * m.md.md_p_size + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
+                    + m.md.block_size + m.md.num_of_pages * m.md.md_p_size
+                    + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size;
 
-    // TODO - doimplementovat
+    return check_flags(&m.data[pointer],1, BLOCK_SPARE_BAD);
 }
 
 size_t Flash_Memory::Num_Of_Bad_Pages(u_int8_t addr) const
@@ -792,7 +811,7 @@ size_t Flash_Memory::Num_Of_Bad_Pages(u_int8_t addr) const
         return -1;
     }
 
-    // TODO - doimplementovat
+    return m.md.blocks_stats[addr].getNumOfBadPages();
 }
 
 string Flash_Memory::ECC_Histogram(u_int16_t addr) const
@@ -801,9 +820,13 @@ string Flash_Memory::ECC_Histogram(u_int16_t addr) const
         return nullptr;
     }
 
-    // TODO - doimplementovat
+    string s;
+    size_t *histogram = m.md.blocks_stats[addr].getHistogram();
+    for (size_t i = 0; i < MEMORY_ECC_SIZE; ++i) {
+        s.append(string(reinterpret_cast<const char *>(histogram[i])) + " ");
+    }
 
-    return string("neco");
+    return s;
 }
 
 size_t Flash_Memory::Num_Of_Writes_Page(u_int16_t addr) const
@@ -824,18 +847,19 @@ size_t Flash_Memory::Num_Of_Reads_Page(u_int16_t addr) const
     return m.md.blocks_stats[(addr >> 8)].getNumOfReads();
 }
 
-u_char * Flash_Memory::Sector_Status_Page(u_int32_t addr) const
+string Flash_Memory::Sector_Status_Page(u_int32_t addr) const
 {
     if (check_address(m, addr)) {
         return nullptr;
     }
 
-    u_int32_t pointer = (addr >> 8) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
-                        + (addr & (uint8_t) ~0L)
-                          * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
+    string s;
+    s.append(string(reinterpret_cast<const char *>(
+            m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].getNumOfWrites())) + " ");
+    s.append(string(reinterpret_cast<const char *>(
+            m.md.pages_stats[(addr >> 8) * m.md.num_of_pages + (addr & (uint8_t) ~0L)].getNumOfErrors())));
 
-    // TODO - doimplementovat
+    return s;
 }
 
 size_t Flash_Memory::Num_Of_Bad_Blocks() const
@@ -850,7 +874,24 @@ size_t Flash_Memory::Num_Of_Bad_Pages() const
 
 string Flash_Memory::ECC_Histogram()
 {
+    string s;
+    size_t *histogram = m.md.mem_stats->getHistogram();
+    for (size_t i = 0; i < MEMORY_ECC_SIZE; ++i) {
+        s.append(string(reinterpret_cast<const char *>(histogram[i])) + " ");
+    }
 
+    return s;
+}
+
+string Flash_Memory::Sector_Status_Memory() const
+{
+    string s;
+    s.append(string(reinterpret_cast<const char *>(
+                            m.md.mem_stats->getNumOfWrites())) + " ");
+    s.append(string(reinterpret_cast<const char *>(
+                            m.md.mem_stats->getNumOfErrors())));
+
+    return s;
 }
 
 size_t Flash_Memory::Num_Of_Writes() const

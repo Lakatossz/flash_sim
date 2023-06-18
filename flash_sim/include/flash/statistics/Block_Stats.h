@@ -10,6 +10,8 @@
 #define DEFAULT_PAGE_PROG_TIME 15
 #define DEFAULT_ERASE_TIME 30
 
+#define BLOCK_ECC_SIZE 20
+
 /**
  * Definice třídy reprezentující statistiky bloku.
  */
@@ -29,6 +31,10 @@ private:
     size_t Num_Of_Erases = 0;
     /** Počet poškozených stránek. */
     size_t Num_Of_Bad_Pages = 0;
+    /** Počet chyb stránky. */
+    size_t Num_Of_Errors;
+    /** Histogram ECC oprav v bloku. */
+    size_t ECC_Histogram[BLOCK_ECC_SIZE];
 
 public:
 
@@ -76,4 +82,10 @@ public:
     size_t getNumOfBadPages() const;
 
     void setNumOfBadPages(size_t numOfBadPages);
+
+    size_t* getHistogram();
+
+    size_t getNumOfErrors() const;
+
+    void setNumOfErrors(size_t numOfErrors);
 };

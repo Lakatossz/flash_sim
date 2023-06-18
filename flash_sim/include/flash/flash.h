@@ -101,6 +101,7 @@ using json = nlohmann::json;
 #define COM_NUM_OF_BAD_BLOCKS "number_of_bad_blocks"
 #define COM_NUM_OF_BAD_PAGES_MEM "number_of_bad_pages_memory"
 #define COM_ECC_HISTOGRAM_MEM "ecc_histogram_memory"
+#define COM_MEM_STATUS_PAGE "sector_status_memory"
 #define COM_NUM_OF_WRITES_MEM "number_of_writes_memory"
 #define COM_NUM_OF_READS_MEM "number_of_reads_memory"
 #define COM_SAVE_MEM "save_memory"
@@ -213,9 +214,9 @@ typedef struct nand_metadata_struct {
     // Statické parametry paměti.
     uuid_t id{}; /** Identifikátor paměti. */
     size_t sector_size = DEFAULT_SECTOR_SIZE; /** Velikost sektoru stránky. */
-    size_t num_of_sectors = 0; /** Počet sektorů. */
+    size_t num_of_sectors = DEFAULT_PAGE_SIZE / DEFAULT_SECTOR_SIZE; /** Počet sektorů. */
     size_t page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
-    size_t num_of_pages = 0; /** Počet stránek. */
+    size_t num_of_pages = DEFAULT_BLOCK_SIZE / DEFAULT_PAGE_SIZE; /** Počet stránek. */
     size_t block_size = DEFAULT_BLOCK_SIZE; /** Velikost bloku. */
     size_t num_of_blocks = DEFAULT_NUM_OF_BLOCKS; /** Počet bloků. */
     size_t mem_size = 0; /** Velikost paměti. */
@@ -265,6 +266,8 @@ public:
 
     /**
      * Vytvoří paměť s parametry danými vstupem programu.
+     * Tato metoda slouží pro prvotní definici simulátoru
+     * spolu se vstupnimi parametry.
      */
     Flash_Memory(size_t page_size,
                  size_t block_size,
@@ -276,6 +279,8 @@ public:
 
     /**
      * Vytvoří paměť s parametry danými z načtení ze souboru.
+     * Metoda slouží k předefinování parametrů paměti
+     * - např. načtení paměti ze souboru.
      */
     Flash_Memory(size_t page_size,
                  size_t block_size,
@@ -289,11 +294,13 @@ public:
 
     /**
      * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
+     * Slouží k prvotní inicializaci paměti.
      */
     int Flash_Init();
 
     /**
      * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
+     * Slouží k přeinicializaci paměti - např. po načtení ze souboru.
      */
     int Flash_Init(u_char *data, size_t size);
 
@@ -407,7 +414,7 @@ public:
     /**
      * Vrátí sector status bloku na dané adrese. TODO
      */
-    u_char * Sector_Status_Block(u_int16_t addr) const;
+    string Sector_Status_Block(u_int16_t addr) const;
 
     /**
      * Vrátí počet mazání bloku na dané adrese.
@@ -427,7 +434,7 @@ public:
     /**
      * Může být použit pro zjištění, zda-li je blok použitelný.
      */
-    bool Is_Bad_Block(u_int16_t addr) const;
+    bool Is_Bad_Block(u_int8_t addr) const;
 
     /**
      * Vrátí počet poškozených stránek v bloku na dané adrese.
@@ -450,9 +457,9 @@ public:
     size_t Num_Of_Reads_Page(u_int16_t addr) const;
 
     /**
-     * Vrátí sector statusy stránek v bloku na dané adrese. TODO
+     * Vrátí sector statusy v bloku na dané adrese. TODO
      */
-    u_char * Sector_Status_Page(u_int32_t addr) const;
+    string Sector_Status_Page(u_int32_t addr) const;
 
     /**
      * Vrátí počet poškozených bloků v paměti.
@@ -468,6 +475,11 @@ public:
      * Vrátí ECC histrogram ze všech stránek v paměti.
      */
     string ECC_Histogram();
+
+    /**
+     * Vrátí sector statusy celé paměti. TODO
+     */
+    string Sector_Status_Memory() const;
 
     /**
      * Vrátí počet zápisů do paměti.
