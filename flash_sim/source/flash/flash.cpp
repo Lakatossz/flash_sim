@@ -468,8 +468,8 @@ int Flash_Memory::Program_Sector(u_int32_t addr)
 
 int Flash_Memory::Write_Cache(const string& data) const
 {
-    if (data.length() <= 0 && data.length() > m.md.page_size) {
-        cout << "Data nemohou být uložena.\n";
+    if (data.length() <= 0 || data.length() > m.md.page_size) {
+        cout << "Data jsou moc kratka nebo moc dlouha.\n";
         return EXIT_FAILURE;
     }
 
