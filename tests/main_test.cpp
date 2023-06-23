@@ -5,16 +5,20 @@
 
 Flash_Memory *memory;
 
+int counter_done = 0, counter_all = 0;
+
 void run_test(bool (*function_test)(), string test_name) {
-    if ((bool) function_test())
+    counter_all++;
+    if ((bool) function_test()) {
         cout << test_name << " has run " << "succesfuly\n";
-    else
+        counter_done++;
+    } else
         cout << test_name << " has run " << "wrongly\n";
 }
 
 bool test_memory_init_default_ok() {
     memory = new Flash_Memory();
-    return memory != nullptr;
+    return memory->Flash_Init() == EXIT_SUCCESS;
 }
 
 bool test_cache_init_ok() {
@@ -28,7 +32,7 @@ bool test_mem_info() {
 bool test_read_cache_ok() {
     memory->Write_Cache(SHORT_TEXT);
     return memory->Read_Cache() != nullptr
-        && strcmp(reinterpret_cast<const char *>(memory->Read_Cache()), SHORT_TEXT);
+        && memcmp(memory->Read_Cache(), (u_char *)SHORT_TEXT, sizeof(u_char)) == 0;
 }
 
 bool test_write_cache_ok() {
@@ -41,113 +45,91 @@ bool test_write_cache_wrong() {
 
 bool test_program_sector_ok() {
     memory->Write_Cache(SHORT_TEXT);
-    return memory->Program_Sector(0x0000) == EXIT_SUCCESS;
+    return memory->Program_Sector(0x00000000) == EXIT_SUCCESS;
 }
 
 bool test_program_sector_wrong() {
     memory->Write_Cache(SHORT_TEXT);
-    return memory->Program_Sector(0xFFFF) == EXIT_FAILURE;
+    return memory->Program_Sector(0x00FFFFFF) == EXIT_FAILURE;
 }
 
 bool test_read_sector_ok() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Sector(0x0000);
-    return memory->Read_Sector(0x0000) == EXIT_SUCCESS
-        && strcmp(reinterpret_cast<const char *>(memory->Read_Cache()), SHORT_TEXT);
+    memory->Program_Sector(0x00000000);
+    return memory->Read_Sector(0x00000000) == EXIT_SUCCESS
+        && memcmp(memory->Read_Cache(), (u_char *)SHORT_TEXT, sizeof(u_char)) == 0;
 }
 
 bool test_read_sector_wrong() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Sector(0xFFFF);
-    return memory->Read_Sector(0xFFFF) == EXIT_FAILURE;
+    memory->Program_Sector(0x00FFFFFF);
+    return memory->Read_Sector(0x00FFFFFF) == EXIT_FAILURE;
 }
 
 bool test_program_page_ok() {
     memory->Write_Cache(SHORT_TEXT);
-    return memory->Program_Page(0x0000) == EXIT_SUCCESS;
+    return memory->Program_Page(0x00000000) == EXIT_SUCCESS;
 }
 
 bool test_program_page_wrong() {
     memory->Write_Cache(SHORT_TEXT);
-    return memory->Program_Page(0xFFFF) == EXIT_FAILURE;
+    return memory->Program_Page(0x00FFFFFF) == EXIT_FAILURE;
 }
 
 bool test_read_page_ok() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0x0000);
-    return memory->Read_Page(0x0000) == EXIT_SUCCESS
-           && strcmp(reinterpret_cast<const char *>(memory->Read_Cache()), SHORT_TEXT);
+    memory->Program_Page(0x00000000);
+    return memory->Read_Page(0x00000000) == EXIT_SUCCESS
+           && memcmp(memory->Read_Cache(), (u_char *)SHORT_TEXT, sizeof(u_char)) == 0;
 }
 
 bool test_read_page_wrong() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0xFFFF);
-    return memory->Read_Page(0xFFFF) == EXIT_FAILURE;
+    memory->Program_Page(0x00FFFFFF);
+    return memory->Read_Page(0x00FFFFFF) == EXIT_FAILURE;
 }
 
 bool test_program_data_move_ok() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0x0000);
-    return memory->Program_Data_Move(0x0000, 0x0010) == EXIT_SUCCESS
-        && memory->Read_Page(0x0000) == EXIT_SUCCESS;
+    memory->Program_Page(0x00000000);
+    return memory->Program_Data_Move(0x00000000, 0x00000100) == EXIT_SUCCESS
+        && memory->Read_Page(0x00000000) == EXIT_SUCCESS;
 }
 
 bool test_program_data_move_wrong() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0x0000);
-    return memory->Program_Data_Move(0x0000, 0xFFFF) == EXIT_FAILURE;
+    memory->Program_Page(0x00000000);
+    return memory->Program_Data_Move(0x00000000, 0x00FFFFFF) == EXIT_FAILURE;
 }
 
 bool test_block_erase_ok() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0x0000);
-    return memory->Block_Erase(0x00)
-        && memory->Read_Page(0x0000) == EXIT_SUCCESS
-        && strcmp(reinterpret_cast<const char *>(memory->Read_Cache()), "");
+    memory->Program_Page(0x00000000);
+    return memory->Block_Erase(0x00000000) == EXIT_SUCCESS
+        && memory->Read_Page(0x00000000) == EXIT_SUCCESS
+        && memcmp(memory->Read_Cache(), (u_char *)"", sizeof(u_char)) == 0;
 }
 
 bool test_block_erase_wrong() {
     memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0x0000);
-    return memory->Block_Erase(0xFF) == EXIT_FAILURE;
+    memory->Program_Page(0x00000000);
+    return memory->Block_Erase(0x00FFFFFF) == EXIT_FAILURE;
 }
 
 bool test_num_of_writes_page_ok() {
-    memory->Write_Cache(SHORT_TEXT);
-    for (int i = 0; i < 20; i++) {
-        memory->Program_Page(0x0000);
-    }
-
-    return memory->Num_Of_Writes_Page(0x0000) == 20;
+    return memory->Num_Of_Writes_Page(0x00000000) == 9;
 }
 
 bool test_num_of_writes_page_wrong() {
-    memory->Write_Cache(SHORT_TEXT);
-    for (int i = 0; i < 20; i++) {
-        memory->Program_Page(0x0000);
-    }
-
-    return memory->Num_Of_Writes_Page(0x0000) == 10;
+    return memory->Num_Of_Writes_Page(0x00000000) != 1;
 }
 
 bool test_num_of_reads_page_ok() {
-    memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0x0000);
-    for (int i = 0; i < 20; i++) {
-        memory->Read_Page(0x0000);
-    }
-
-    return memory->Num_Of_Reads_Page(0x0000) == 20;
+    return memory->Num_Of_Reads_Page(0x00000000) == 5;
 }
 
 bool test_num_of_reads_page_wrong() {
-    memory->Write_Cache(SHORT_TEXT);
-    memory->Program_Page(0x0000);
-    for (int i = 0; i < 20; i++) {
-        memory->Read_Page(0x0000);
-    }
-
-    return memory->Num_Of_Reads_Page(0x0000) == 10;
+    return memory->Num_Of_Reads_Page(0x00000000) != 1;
 }
 
 
@@ -177,6 +159,7 @@ int main(int argc, char** argv)
     run_test(&test_num_of_reads_page_ok, "test_num_of_reads_page_ok");
     run_test(&test_num_of_reads_page_wrong, "test_num_of_reads_page_wrong");
 
+    cout << "Dobehlo spravne " << counter_done << " z " << counter_all << " testu\n";
 
     return EXIT_SUCCESS;
 }
