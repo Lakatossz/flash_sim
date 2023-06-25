@@ -153,6 +153,9 @@ using json = nlohmann::json;
 #define DEFAULT_COM_TIME 15
 #define DEFAULT_BAD_BLOCKS_FACTORY 12
 
+#define SECTOR_SPARE_WRITTEN 0
+#define SECTOR_SPARE_ERROR 1
+
 #define PAGE_SPARE_BAD 0
 #define PAGE_SPARE_VALID 1
 #define PAGE_SPARE_ERROR 2

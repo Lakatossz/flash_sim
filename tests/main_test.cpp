@@ -21,6 +21,11 @@ bool test_memory_init_default_ok() {
     return memory->Flash_Init() == EXIT_SUCCESS;
 }
 
+bool test_create_specific_memory_ok() {
+    memory = new Flash_Memory(512, 8192, 16, NMem_Type::SLC, 10, 15, 20);
+    return memory != nullptr && memory->Flash_Init() == EXIT_SUCCESS;
+}
+
 bool test_cache_init_ok() {
     return memory->Cache_Init() == EXIT_SUCCESS;
 }
@@ -334,6 +339,13 @@ bool test_save_and_load_state_wrong() {
     bool load_return = memory == nullptr || memory->Read_Time_Total(0x00000000) == 1.0;
     return save_return || load_return;
 }
+bool test_wear_out_block() {
+    for (int i = 0; i < MAX_ERASE_NUMBER; ++i) {
+        memory->Block_Erase(0x00080000);
+    }
+
+    return memory->Block_Erase(0x00080000) == EXIT_FAILURE && memory->Read_Status() == 132;
+}
 
 bool test_true_mem_size() {
     return memory->Get_True_Mem_Size() == 132816;
@@ -350,6 +362,7 @@ bool test_reset_memory_ok() {
 
 int main()
 {
+    run_test(&test_create_specific_memory_ok, "test_create_specific_memory_ok");
     run_test(&test_memory_init_default_ok, "test_memory_init_default_ok");
     run_test(&test_cache_init_ok, "test_cache_init_ok");
     run_test(&test_mem_info, "test_mem_info");
@@ -417,6 +430,7 @@ int main()
     run_test(&test_save_and_load_memory_wrong, "test_save_and_load_memory_wrong");
 //    run_test(&test_save_and_load_state_ok, "test_save_and_load_state_ok");
 //    run_test(&test_save_and_load_state_wrong, "test_save_and_load_state_wrong");
+    run_test(&test_wear_out_block, "test_wear_out_block");
     run_test(&test_true_mem_size, "test_true_mem_size");
     run_test(&test_read_status_ok, "test_read_status_ok");
     run_test(&test_reset_memory_ok, "test_reset_memory_ok");
