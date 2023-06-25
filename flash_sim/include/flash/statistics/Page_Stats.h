@@ -101,6 +101,10 @@ public:
 
     size_t* getHistogram();
 
+    void increaseHistogramOnIndex(size_t index);
+
+    void resetHistogram();
+
     size_t getNumOfErrors() const;
 
     void setNumOfErrors(size_t numOfErrors);

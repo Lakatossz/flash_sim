@@ -129,6 +129,16 @@ size_t* Page_Stats::getHistogram() {
     return this->ECC_Histogram;
 }
 
+void Page_Stats::increaseHistogramOnIndex(size_t index) {
+    if (index > 0) {
+        this->ECC_Histogram[index]++;
+    }
+}
+
+void Page_Stats::resetHistogram() {
+    memset(this->ECC_Histogram, 0L, PAGE_ECC_SIZE);
+}
+
 size_t Page_Stats::getNumOfErrors() const {
     return Num_Of_Errors;
 }

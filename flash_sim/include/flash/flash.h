@@ -6,6 +6,8 @@
 #include <memory>
 #include <cstdlib>
 #include <uuid/uuid.h>
+#include <iterator>
+#include <algorithm>
 #include <nlohmann/json.hpp>
 #include "../include/flash/statistics/Page_Stats.h"
 #include "../include/flash/statistics/Block_Stats.h"
@@ -414,7 +416,7 @@ public:
     /**
      * Vrátí sector status bloku na dané adrese.
      */
-    string Sector_Status_Block(u_int32_t addr) const;
+    size_t * Sector_Status_Block(u_int32_t addr) const;
 
     /**
      * Vrátí počet mazání bloku na dané adrese.
@@ -444,7 +446,7 @@ public:
     /**
      * Histogram pro ECC všech stránek v bloku na dané adrese.
      */
-    string ECC_Histogram(u_int32_t addr) const;
+    size_t * ECC_Histogram(u_int32_t addr) const;
 
     /**
      * Vrátí počet zápisů do stránek v bloku na dané adrese.
@@ -459,7 +461,7 @@ public:
     /**
      * Vrátí sector statusy v bloku na dané adrese.
      */
-    string Sector_Status_Page(u_int32_t addr) const;
+    size_t * Sector_Status_Page(u_int32_t addr) const;
 
     /**
      * Vrátí počet poškozených bloků v paměti.
@@ -474,12 +476,12 @@ public:
     /**
      * Vrátí ECC histrogram ze všech stránek v paměti.
      */
-    string ECC_Histogram();
+    size_t * ECC_Histogram();
 
     /**
      * Vrátí sector statusy celé paměti.
      */
-    string Sector_Status_Memory() const;
+    size_t * Sector_Status_Memory() const;
 
     /**
      * Vrátí počet zápisů do paměti.

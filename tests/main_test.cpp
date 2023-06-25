@@ -10,10 +10,10 @@ int counter_done = 0, counter_all = 0;
 void run_test(bool (*function_test)(), string test_name) {
     counter_all++;
     if ((bool) function_test()) {
-        cout << test_name << " has run " << "succesfuly\n";
+        cout << "[v] " << test_name << endl;
         counter_done++;
     } else
-        cout << test_name << " has run " << "wrongly\n";
+        cout << "[x] " << test_name << endl;
 }
 
 bool test_memory_init_default_ok() {
@@ -132,10 +132,224 @@ bool test_num_of_reads_page_wrong() {
     return memory->Num_Of_Reads_Page(0x00000000) != 1;
 }
 
+bool test_num_of_writes_ok() {
+    return memory->Num_Of_Writes(0x00000000) == 8;
+}
 
-int main(int argc, char** argv)
+bool test_num_of_writes_wrong() {
+    return memory->Num_Of_Writes(0x00000000) != 1;
+}
+
+bool test_num_of_reads_ok() {
+    return  memory->Num_Of_Reads(0x00000000) == 5;
+}
+
+bool test_num_of_reads_wrong() {
+    return  memory->Num_Of_Reads(0x00000000) != 1;
+}
+
+bool test_ecc_info() {
+    return memcmp(memory->ECC_Info(0x00000000), "", sizeof(u_char)) == 0;
+}
+
+bool test_ecc_histogram_memory_ok() {
+    size_t *histogram = memory->ECC_Histogram();
+    return histogram != nullptr && histogram[0] == 0 && histogram[1] == 0;
+}
+
+bool test_ecc_histogram_block_ok() {
+    size_t *histogram = memory->ECC_Histogram(0x00000000);
+    return histogram != nullptr && histogram[0] == 0 && histogram[1] == 0;
+}
+
+bool test_ecc_histogram_block_wrong() {
+    size_t *histogram = memory->ECC_Histogram(0x00FFFFFF);
+    return histogram == nullptr;
+}
+
+bool test_read_time_last_ok() {
+    return memory->Read_Time_Last(0x00000000) == DEFAULT_READ_PAGE_TIME;
+}
+
+bool test_read_time_last_wrong() {
+    return memory->Read_Time_Last(0x00FFFFFF) == -1;
+}
+
+bool test_program_time_last_ok() {
+    return memory->Program_Time_Last(0x00000000) == DEFAULT_PAGE_PROG_TIME;
+}
+
+bool test_program_time_last_wrong() {
+    return memory->Program_Time_Last(0x00FFFFFF) == -1;
+}
+
+bool test_read_time_total_ok() {
+    return memory->Read_Time_Total(0x00000000) == 55.0;
+}
+
+bool test_read_time_total_wrong() {
+    return memory->Read_Time_Total(0x00FFFFFF) == -1;
+}
+
+bool test_program_time_total_ok() {
+    return memory->Program_Time_Total(0x00000000) == 120;
+}
+
+bool test_program_time_total_wrong() {
+    return memory->Program_Time_Total(0x00FFFFFF) == -1;
+}
+
+bool test_com_total_time_ok() {
+    return memory->Com_Total_Time(0x00000000) == 0.0;
+}
+
+bool test_com_total_time_wrong() {
+    return memory->Com_Total_Time(0x00FFFFFF) == -1;
+}
+
+bool test_sector_status_page_ok() {
+    size_t *data = memory->Sector_Status_Page(0x00000000);
+    return data != nullptr && data[0] == 8 && data[1] == 0;
+}
+
+bool test_sector_status_page_wrong() {
+    return memory->Sector_Status_Page(0x00FFFFFF) == nullptr;
+}
+
+bool test_num_of_bad_blocks_ok() {
+    return memory->Num_Of_Bad_Blocks() == 0;
+}
+
+bool test_num_of_bad_pages_ok() {
+    return memory->Num_Of_Bad_Pages() == 0;
+}
+
+bool test_ecc_histogram() {
+    return memory->ECC_Histogram() != nullptr;
+}
+
+bool test_sector_status_block_ok() {
+    size_t *data = memory->Sector_Status_Block(0x00000000);
+    return data != nullptr && data[0] == 1 && data[1] == 9 && data[2] == 0;
+}
+
+bool test_sector_status_block_wrong() {
+    size_t *data = memory->Sector_Status_Block(0x00FFFFFF);
+    return data == nullptr;
+}
+
+bool test_sector_status_memory_ok() {
+    size_t *data = memory->Sector_Status_Memory();
+    return data != nullptr && data[0] == 0 && data[1] == 0;
+}
+
+bool test_memory_num_of_writes_ok() {
+    return memory->Num_Of_Writes() == 0;
+}
+
+bool test_memory_num_of_reads_ok() {
+    return memory->Num_Of_Reads() == 5;
+}
+
+bool test_set_program_time_page_ok() {
+    return memory->Set_Prog_Time_Page(0x00000000, 5.0) == EXIT_SUCCESS
+        && memory->Program_Time_Last(0x00000000) == 5.0;
+}
+
+bool test_set_program_time_page_wrong() {
+    return memory->Set_Prog_Time_Page(0x00FFFFFF, 0.0) == EXIT_FAILURE;
+}
+
+bool test_set_prog_time_block_ok() {
+    return memory->Set_Prog_Time_Block(0x00000000, 6.0) == EXIT_SUCCESS
+           && memory->Program_Time_Last(0x00000000) == 6.0;
+}
+
+bool test_set_prog_time_block_wrong() {
+    return memory->Set_Prog_Time_Block(0x00FFFFFF, 0.0) == EXIT_FAILURE;
+}
+
+bool test_set_prog_time_mem_ok() {
+    return memory->Set_Prog_Time_Mem(7.0) == EXIT_SUCCESS
+           && memory->Program_Time_Last(0x00000000) == 7.0;
+}
+
+bool test_set_read_time_page_ok() {
+    return memory->Set_Read_Time_Page(0x00000000, 5.0) == EXIT_SUCCESS
+           && memory->Read_Time_Last(0x00000000) == 5.0;
+}
+
+bool test_set_read_time_page_wrong() {
+    return memory->Set_Read_Time_Page(0x00FFFFFF, 0.0) == EXIT_FAILURE;
+}
+
+bool test_set_read_time_block_ok() {
+    return memory->Set_Read_Time_Block(0x00000000, 6.0) == EXIT_SUCCESS
+           && memory->Read_Time_Last(0x00000000) == 6.0;
+}
+
+bool test_set_read_time_block_wrong() {
+    return memory->Set_Read_Time_Block(0x00FFFFFF, 0.0) == EXIT_FAILURE;
+}
+
+bool test_set_read_time_mem_ok() {
+    return memory->Set_Read_Time_Mem(7.0) == EXIT_SUCCESS
+           && memory->Read_Time_Last(0x00000000) == 7.0;
+}
+
+bool test_set_erase_time_block_ok() {
+    return memory->Set_Erase_Time_Block(0x00000000, 5.0) == EXIT_SUCCESS
+           && memory->Erase_Time_Last(0x00000000) == 5.0;
+}
+
+bool test_set_erase_time_block_wrong() {
+    return memory->Set_Erase_Time_Block(0x00FFFFFF, 5.0) == EXIT_FAILURE;
+}
+
+bool test_set_erase_time_mem_ok() {
+    return memory->Set_Erase_Time_Mem(6.0) == EXIT_SUCCESS
+           && memory->Erase_Time_Last(0x00000000) == 6.0;
+}
+
+bool test_save_and_load_memory_ok() {
+    return memory->Save_Memory("test_save_memory_ok_file.json") == EXIT_SUCCESS
+        && memory->Load_Memory("test_save_memory_ok_file.json") == EXIT_SUCCESS;
+}
+
+bool test_save_and_load_memory_wrong() {
+    return memory->Save_Memory("test_save_memory_wrong_file.json") == EXIT_FAILURE
+           || memory->Load_Memory("test_save_memory_wrong_file.text") == EXIT_FAILURE;
+}
+
+bool test_save_and_load_state_ok() {
+    bool save_return = memory->Save_State("test_save_state_ok_file.json") == EXIT_SUCCESS;
+    memory = memory->Load_State("test_save_state_ok_file.json");
+    bool load_return = memory != nullptr && memory->Read_Time_Total(0x00000000) == 7.0;
+    return save_return && load_return;
+}
+
+bool test_save_and_load_state_wrong() {
+    bool save_return = memory->Save_State("test_save_state_wrong_file.json") == EXIT_FAILURE;
+    memory = memory->Load_State("test_save_memory_wrong_file.json");
+    bool load_return = memory == nullptr || memory->Read_Time_Total(0x00000000) == 1.0;
+    return save_return || load_return;
+}
+
+bool test_true_mem_size() {
+    return memory->Get_True_Mem_Size() == 132816;
+}
+
+bool test_read_status_ok() {
+    return memory->Read_Status() == 8;
+}
+
+bool test_reset_memory_ok() {
+    return memory->Reset() == EXIT_SUCCESS;
+}
+
+
+int main()
 {
-
     run_test(&test_memory_init_default_ok, "test_memory_init_default_ok");
     run_test(&test_cache_init_ok, "test_cache_init_ok");
     run_test(&test_mem_info, "test_mem_info");
@@ -158,6 +372,54 @@ int main(int argc, char** argv)
     run_test(&test_num_of_writes_page_wrong, "test_num_of_writes_page_wrong");
     run_test(&test_num_of_reads_page_ok, "test_num_of_reads_page_ok");
     run_test(&test_num_of_reads_page_wrong, "test_num_of_reads_page_wrong");
+    run_test(&test_num_of_writes_ok, "test_num_of_writes_ok");
+    run_test(&test_num_of_writes_wrong, "test_num_of_writes_wrong");
+    run_test(&test_num_of_reads_ok, "test_num_of_reads_ok");
+    run_test(&test_num_of_reads_wrong, "test_num_of_reads_wrong");
+    run_test(&test_ecc_info, "test_ecc_info");
+    run_test(&test_read_time_last_ok, "test_read_time_last_ok");
+    run_test(&test_read_time_last_wrong, "test_read_time_last_wrong");
+    run_test(&test_program_time_last_ok, "test_program_time_last_ok");
+    run_test(&test_program_time_last_wrong, "test_program_time_last_wrong");
+    run_test(&test_read_time_total_ok, "test_read_time_total_ok");
+    run_test(&test_read_time_total_wrong, "test_read_time_total_wrong");
+    run_test(&test_program_time_total_ok, "test_program_time_total_ok");
+    run_test(&test_program_time_total_wrong, "test_program_time_total_wrong");
+    run_test(&test_com_total_time_ok, "test_com_total_time_ok");
+    run_test(&test_com_total_time_wrong, "test_com_total_time_wrong");
+    run_test(&test_sector_status_page_ok, "test_sector_status_page_ok");
+    run_test(&test_sector_status_page_wrong, "test_sector_status_page_wrong");
+    run_test(&test_num_of_bad_blocks_ok, "test_num_of_bad_blocks_ok");
+    run_test(&test_num_of_bad_pages_ok, "test_num_of_bad_pages_ok");
+    run_test(&test_ecc_histogram, "test_ecc_histogram");
+    run_test(&test_ecc_histogram_memory_ok, "test_ecc_histogram_memory_ok");
+    run_test(&test_ecc_histogram_block_ok, "test_ecc_histogram_block_ok");
+    run_test(&test_ecc_histogram_block_wrong, "test_ecc_histogram_block_wrong");
+    run_test(&test_sector_status_block_ok, "test_sector_status_block_ok");
+    run_test(&test_sector_status_block_wrong, "test_sector_status_block_wrong");
+    run_test(&test_sector_status_memory_ok, "test_sector_status_memory_ok");
+    run_test(&test_memory_num_of_writes_ok, "test_memory_num_of_writes_ok");
+    run_test(&test_memory_num_of_reads_ok, "test_memory_num_of_reads_ok");
+    run_test(&test_set_program_time_page_ok, "test_set_program_time_page_ok");
+    run_test(&test_set_program_time_page_wrong, "test_set_program_time_page_wrong");
+    run_test(&test_set_prog_time_block_ok, "test_set_prog_time_block_ok");
+    run_test(&test_set_prog_time_block_wrong, "test_set_prog_time_block_wrong");
+    run_test(&test_set_prog_time_mem_ok, "test_set_prog_time_mem_ok");
+    run_test(&test_set_read_time_page_ok, "test_set_read_time_page_ok");
+    run_test(&test_set_read_time_page_wrong, "test_set_read_time_page_wrong");
+    run_test(&test_set_read_time_block_ok, "test_set_read_time_block_ok");
+    run_test(&test_set_read_time_block_wrong, "test_set_read_time_block_wrong");
+    run_test(&test_set_read_time_mem_ok, "test_set_read_time_mem_ok");
+    run_test(&test_set_erase_time_block_ok, "test_set_erase_time_block_ok");
+    run_test(&test_set_erase_time_block_wrong, "test_set_erase_time_block_wrong");
+    run_test(&test_set_erase_time_mem_ok, "test_set_erase_time_mem_ok");
+    run_test(&test_save_and_load_memory_ok, "test_save_and_load_memory_ok");
+    run_test(&test_save_and_load_memory_wrong, "test_save_and_load_memory_wrong");
+//    run_test(&test_save_and_load_state_ok, "test_save_and_load_state_ok");
+//    run_test(&test_save_and_load_state_wrong, "test_save_and_load_state_wrong");
+    run_test(&test_true_mem_size, "test_true_mem_size");
+    run_test(&test_read_status_ok, "test_read_status_ok");
+    run_test(&test_reset_memory_ok, "test_reset_memory_ok");
 
     cout << "Dobehlo spravne " << counter_done << " z " << counter_all << " testu\n";
 

@@ -510,12 +510,13 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_SECTOR_STATUS_BLOCK)) {
+        } else if (command == string(COM_SECTOR_STATUS_PAGE)) {
             try {
                 *input >> args[0];
-                string data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0], nullptr, 16));
-                if (!data.empty()) {
-                    *output << "Status sectoru stranky je: " << data << "(zapis, error)";
+                size_t *data = flashMemory->Sector_Status_Page((int16_t) stoi(args[0], nullptr, 16));
+                if (!data) {
+                    *output << "Status sectoru stranky je - zapis: " << data[0] << " error: " << data[1] << endl;
+                    delete(data);
                 } else {
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
                     return EXIT_FAILURE;
@@ -597,12 +598,17 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ECC_HISTOGRAM_BLOCK)) {
             try {
                 *input >> args[0];
-                string data = flashMemory->ECC_Histogram((int16_t) stoi(args[0], nullptr, 16));
-                if(data.length() == 0) {
+                size_t *data = flashMemory->ECC_Histogram((int16_t) stoi(args[0], nullptr, 16));
+                if(data) {
                     *output << "Nepodarilo se precist ECC histogram bloku na adrese " << args[0] << ".\n";
                     return EXIT_FAILURE;
                 } else {
-                    *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                    *output << "Obsah ecc na adrese " << args[0];
+                    for (int i = 0; i < MEMORY_ECC_SIZE; i++) {
+                        *output << " " << data[i];
+                    }
+                    *output << endl;
+                    delete(data);
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
@@ -636,13 +642,14 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
                 *output << "Parametr musi byt cislo!\n";
                 return EXIT_FAILURE;
             }
-        } else if (command == string(COM_SECTOR_STATUS_PAGE)) {
+        } else if (command == string(COM_SECTOR_STATUS_BLOCK)) {
             try {
                 *input >> args[0];
-                string data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0],
+                size_t *data = flashMemory->Sector_Status_Block((int16_t) stoi(args[0],
                                                                                nullptr, 16));
-                if (!data.empty()) {
-                    *output << "Status sectoru bloku je: " << data << "(mazani, zapis, error)";
+                if (!data) {
+                    *output << "Status sectoru bloku je - mazani: " << data[0] << " zapis: " << data[1] << " error: " << data[2] << endl;
+                    delete(data);
                 } else {
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
                     return EXIT_FAILURE;
@@ -680,12 +687,17 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
         } else if (command == string(COM_ECC_HISTOGRAM_MEM)) {
             try {
                 *input >> args[0];
-                string data = flashMemory->ECC_Histogram();
-                if(data.length() == 0) {
+                size_t *data = flashMemory->ECC_Histogram();
+                if(!data) {
                     *output << "Nepodarilo se precist ECC histogram pameti " << args[0] << ".\n";
                     return EXIT_FAILURE;
                 } else {
-                    *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
+                    *output << "Obsah ecc na adrese " << args[0];
+                    for (int i = 0; i < MEMORY_ECC_SIZE; i++) {
+                        *output << " " << data[i];
+                    }
+                    *output << endl;
+                    delete(data);
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
@@ -693,9 +705,10 @@ int handleLifeCycle(ostream *output, istream *input, Flash_Memory *flashMemory) 
             }
         } else if (command == string(COM_MEM_STATUS_PAGE)) {
             try {
-                string data = flashMemory->Sector_Status_Memory();
-                if (!data.empty()) {
-                    *output << "Status sectoru pameti je: " << data << "(zapis, error)";
+                size_t *data = flashMemory->Sector_Status_Memory();
+                if (!data) {
+                    *output << "Status sectoru pameti - zapis:" << data[0] << " error: " << data[1]  << endl;
+                    delete(data);
                 } else {
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
                     return EXIT_FAILURE;
