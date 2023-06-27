@@ -12,15 +12,25 @@ Nad pamětí je možné provádět dva typy operací (COMMAND), a to funkční (
 
 * Minimální datová jednotka. Je dána napevno na 512 bytů.
 
+#### Spare Data
+
+* Jako velikost spare dat jednoho sektoru bylo zvoleno 24 bitů, tady 3 Byty.
+  * 16 bitů pro ECC - zabezpečení dat stránky.
+  * 8 bitů pro bitové data
+    * WRITTEN - 
+    * ECC_ERROR - 
+| Číslo bitu | 0   | 1     | 2     | 3      | 4        | 5 | 6 | 7 |
+|------------|-----|-------|-------|--------|----------|---|---|---|
+| Význam     | WRITTEN | ERROR | - | - | - | - | - | - |
+
 ### Stránka
 
-* Minimální jednotka pro zápis. Její velikost může být změněna při spuštení simulace. Základní
+* Jednotka pro zápis. Její velikost může být změněna při spuštení simulace. Základní
 hodnota je 512 bytů.
 
 #### Spare Data
 
-* Jako velikost spare dat jedné stránky bylo zvoleno 24 bitů, tady 3 Byty.
-  * 16 bitů pro ECC - zabezpečení dat stránky.
+* Jako velikost spare dat jedné stránky bylo zvoleno 8 bitů.
   * 8 bitů pro bitové data 
     * BAD bit - určuje, zda je stránka poškozená, tedy zda ji lze vůbec použít
     * VALID bit - určuje, zda jsou data stránky validní nebo zda je dostupná pro zápis
@@ -39,8 +49,7 @@ spuštění simulace.
 
 #### Spare Data
 
-* Jako velikost spare dat jedné stránky bylo zvoleno 24 bitů, tady 3 Byty.
-  * 16 bitů pro ECC - zabezpečení dat stránky.
+* Jako velikost spare dat jedné stránky bylo zvoleno 10 bitů, tedy 2 Byty.
   * 10 bitů pro bitové data
     * BAD bit - určuje, zda je blok poškozen, tedy zda ho jde vůbec použít
     * VALID bit - určuje, zda jsou data bloku validní nebo zda je dostupná pro mazání
@@ -98,10 +107,8 @@ Error Correction Code - slouží k detekci chyby stránky nebo bloku.
 ### TODO
 *[x] Zápis a čtení dat do souboru.
 *[x] Status registr.
-*[ ] Ukládání a čtení cache před a po save_state.
+*[x] Ukládání a čtení cache před a po save_state.
 *[ ] Logika ECC a ostatních spare dat.
 *[ ] Histogram na všech úrovních.
-*[ ] Přidat jednotlivé unit testy a function testy.
-*[ ] Přidat tutorial na přidání unittestů.
+*[x] Přidat jednotlivé unit testy a function testy.
 
-https://www.youtube.com/watch?v=6dqFqh3UbPY
