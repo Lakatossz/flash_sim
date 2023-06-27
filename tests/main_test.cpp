@@ -173,7 +173,8 @@ bool test_ecc_histogram_block_wrong() {
 }
 
 bool test_read_time_last_ok() {
-    return memory->Read_Time_Last(0x00000000) == DEFAULT_READ_PAGE_TIME;
+    memory->Read_Page(0x00000700);
+    return memory->Read_Time_Last(0x00000700) == DEFAULT_READ_PAGE_TIME;
 }
 
 bool test_read_time_last_wrong() {
@@ -253,7 +254,7 @@ bool test_memory_num_of_writes_ok() {
 }
 
 bool test_memory_num_of_reads_ok() {
-    return memory->Num_Of_Reads() == 5;
+    return memory->Num_Of_Reads() == 6;
 }
 
 bool test_set_program_time_page_ok() {
@@ -352,7 +353,7 @@ bool test_true_mem_size() {
 }
 
 bool test_read_status_ok() {
-    return memory->Read_Status() == 8;
+    return memory->Read_Status() == 132;
 }
 
 bool test_reset_memory_ok() {

@@ -47,13 +47,9 @@ public:
 
     void setEraseTime(float eraseTime);
 
-    void addEraseTime(float eraseTime);
-
     float getLastEraseTime() const;
 
     void setLastEraseTime(float lastEraseTime);
-
-    void addLastEraseTime(float eraseTime);
 
     float getTotalEraseTime() const;
 
@@ -81,11 +77,7 @@ public:
 
     size_t getNumOfBadPages() const;
 
-    void setNumOfBadPages(size_t numOfBadPages);
-
     size_t* getHistogram();
 
     size_t getNumOfErrors() const;
-
-    void setNumOfErrors(size_t numOfErrors);
 };

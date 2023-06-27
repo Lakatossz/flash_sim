@@ -1,52 +1,6 @@
 #include "flash/flash.h"
 
 /**
- * Funkce pro inkrementaci pole představující počítadlo.
- * @param array Pole u_char - počítadlo.
- * @param size Počet bytu pole.
- */
-void increase_counter(u_char *array, size_t size) {
-    for (size_t i = size - 1; i > 0; --i) {
-        if (array[i] < (u_char) 1L) {
-            array[i]++;
-            return;
-        }
-    }
-}
-
-/**
- * Funkce pro získání integer hodnoty pole znaků o dané velikosti.
- * @param array Ukazatel na pole znaků.
- * @param size Velikost pole.
- * @return Číselná hodnota pole.
- */
-u_int32_t counter_value(const u_char *array, size_t size) {
-
-    u_int32_t value = 0;
-    size_t i = 0;
-    while (array[i] == (u_char) 1L || i < size) {
-        value += (u_char) 1L;
-        ++i;
-    }
-
-    return value;
-}
-
-/**
- * Zavolá daný algoritmus pro typ operace.
- * @param time_type Typ operace.
- */
-void increase_time(NTime_Type type) {
-    if (type == NTime_Type::READ_PAGE_TIME) {
-        return;
-    } else if (type == NTime_Type::PAGE_PROG_TIME) {
-        return;
-    } else if (type == NTime_Type::ERASE_TIME) {
-        return;
-    }
-}
-
-/**
  * Zkontroluje validnost adresy.
  * @param m Struktura paměti.
  * @param addr Kontrolovaná adresa.
@@ -54,7 +8,7 @@ void increase_time(NTime_Type type) {
  */
 u_int32_t check_address(nand_memory m, u_int32_t addr) {
     /** Zkontroluju adresu bloku. */
-    if ((uint8_t)(addr >> 16) >= m.md.num_of_blocks) {
+    if ((uint16_t)(addr >> 16) >= m.md.num_of_blocks) {
 //        cout << (addr >> 16) << endl;
 //        cout << "Adresa bloku je příliš velká.\n";
         return EXIT_FAILURE;
@@ -254,8 +208,7 @@ int Flash_Memory::Cache_Init() {
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Read_Page(u_int32_t addr) const
-{
+int Flash_Memory::Read_Page(u_int32_t addr) {
     if (check_address(m, addr)) {
         return EXIT_FAILURE;
     }
@@ -267,7 +220,7 @@ int Flash_Memory::Read_Page(u_int32_t addr) const
         return EXIT_FAILURE;
     }
 
-    u_int32_t pointer = (uint8_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+    u_int32_t pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
             + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
                      + (uint8_t)(addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
 
@@ -278,7 +231,7 @@ int Flash_Memory::Read_Page(u_int32_t addr) const
         return EXIT_FAILURE;
     }
 
-    size_t page_stats_pointer = (uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
+    size_t page_stats_pointer = (uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
 
     /* Pro jistotu vymažeme předchozí obsah cache. */
     memset(m.mem_cache, 0L, m.md.page_size);
@@ -303,10 +256,14 @@ int Flash_Memory::Read_Page(u_int32_t addr) const
 
     m.md.pages_stats[page_stats_pointer]
         .setLastReadPageTime(m.md.pages_stats[page_stats_pointer].getReadPageTime());
-    increase_time(READ_PAGE_TIME);
+
+    this->Increase_Time(page_stats_pointer, READ_PAGE);
+    for (int i = 0; i < m.md.num_of_sectors; i++) {
+        this->Simulate_Error(pointer + i * m.md.sector_size + m.md.md_s_size * i + m.md.sector_size + 1, READ_PAGE);
+    }
 
     m.md.pages_stats[page_stats_pointer].addNumOfReads(1);
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].addNumOfReads(1);
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].addNumOfReads(1);
     m.md.mem_stats->addNumOfReads(1);
 
     clear_flag((u_char *) &m.md.status, STATUS_FLAG_RB);
@@ -315,8 +272,7 @@ int Flash_Memory::Read_Page(u_int32_t addr) const
     return EXIT_SUCCESS;
 }
 
-int Flash_Memory::Read_Sector(u_int32_t addr) const
-{
+int Flash_Memory::Read_Sector(u_int32_t addr) {
     if (check_address(m, addr)) {
 //        cout << "Adresu nelze pouzit.\n";
         return EXIT_FAILURE;
@@ -329,12 +285,12 @@ int Flash_Memory::Read_Sector(u_int32_t addr) const
         return EXIT_FAILURE;
     }
 
-    u_int32_t pointer = (uint8_t)((addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size))
-               + (uint8_t) ((addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size))
+    u_int32_t pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+                                       + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
+               + (uint8_t) (addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size)
                + (uint8_t)(addr & (uint8_t) ~0L) * (m.md.num_of_sectors * m.md.md_s_size);
 
-    u_int32_t page_pointer = (uint8_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+    u_int32_t page_pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
                                              + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
                              + (uint8_t)(addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
 
@@ -345,7 +301,7 @@ int Flash_Memory::Read_Sector(u_int32_t addr) const
         return EXIT_FAILURE;
     }
 
-    size_t page_stats_pointer = (uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
+    size_t page_stats_pointer = (uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
 
     if (check_ecc(&m.data[pointer + m.md.sector_size + 1], 2) > 0) {
         m.md.pages_stats[page_stats_pointer].increaseHistogramOnIndex(
@@ -365,10 +321,14 @@ int Flash_Memory::Read_Sector(u_int32_t addr) const
 
     m.md.pages_stats[page_stats_pointer]
             .setLastReadPageTime(m.md.pages_stats[page_stats_pointer].getReadPageTime());
-    increase_time(READ_PAGE_TIME);
+
+    this->Increase_Time(page_stats_pointer, READ_PAGE);
+    for (int i = 0; i < m.md.num_of_sectors; i++) {
+        this->Simulate_Error(pointer + m.md.sector_size + 1, READ_PAGE);
+    }
 
     m.md.pages_stats[page_stats_pointer].addNumOfReads(1);
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].addNumOfReads(1);
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].addNumOfReads(1);
     m.md.mem_stats->addNumOfReads(1);
 
     clear_flag((u_char *) &m.md.status, STATUS_FLAG_RB);
@@ -399,8 +359,7 @@ uuid_t* Flash_Memory::Read_ID()
     return &m.md.id;
 }
 
-int Flash_Memory::Program_Page(u_int32_t addr) const
-{
+int Flash_Memory::Program_Page(u_int32_t addr) {
     if (check_address(m, addr)) {
         set_flag((u_char *) &m.md.status, m.md.status_bits, STATUS_FLAG_EPE);
         return EXIT_FAILURE;
@@ -413,7 +372,7 @@ int Flash_Memory::Program_Page(u_int32_t addr) const
         return EXIT_FAILURE;
     }
 
-    u_int32_t pointer = (uint8_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+    u_int32_t pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
             + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
             + (uint8_t)(addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
 
@@ -431,7 +390,7 @@ int Flash_Memory::Program_Page(u_int32_t addr) const
         set_flag(&m.data[pointer + i * m.md.sector_size + i * m.md.md_s_size + m.md.sector_size], SECTOR_SPARE_WRITTEN);
     }
 
-    size_t page_stats_pointer = (uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
+    size_t page_stats_pointer = (uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
 
     /** Aktualizace času běhu. */
     m.md.pages_stats[page_stats_pointer]
@@ -440,10 +399,13 @@ int Flash_Memory::Program_Page(u_int32_t addr) const
     m.md.pages_stats[page_stats_pointer]
         .setLastPageProgTime(m.md.pages_stats[page_stats_pointer].getPageProgTime());
 
-    increase_time(PAGE_PROG_TIME);
+    this->Increase_Time(page_stats_pointer, PAGE_PROG);
+    for (int i = 0; i < m.md.num_of_sectors; i++) {
+        this->Simulate_Error(pointer + i * m.md.sector_size + m.md.md_s_size * i + m.md.sector_size + 1, PAGE_PROG);
+    }
 
     m.md.pages_stats[page_stats_pointer].addNumOfWrites(1);
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].addNumOfWrites(1);
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
     clear_flag((u_char *) &m.md.status, STATUS_FLAG_RB);
@@ -465,12 +427,12 @@ int Flash_Memory::Program_Sector(u_int32_t addr)
         return EXIT_FAILURE;
     }
 
-    u_int32_t pointer = (uint8_t)((addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
-                                                  + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size))
-                + (uint8_t) ((addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size))
+    u_int32_t pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+                                                  + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
+                + (uint8_t) (addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size)
                 + (uint8_t)(addr & (uint8_t) ~0L) * (m.md.num_of_sectors * m.md.md_s_size);
 
-    u_int32_t page_pointer = (uint8_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+    u_int32_t page_pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
                                              + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
                              + (uint8_t)(addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
 
@@ -485,7 +447,7 @@ int Flash_Memory::Program_Sector(u_int32_t addr)
     memcpy(&m.data[pointer], m.mem_cache, m.md.sector_size);
     set_flag(&m.data[pointer + m.md.sector_size], SECTOR_SPARE_WRITTEN);
 
-    size_t page_stats_pointer = (uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
+    size_t page_stats_pointer = (uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8);
 
     /** Aktualizace času běhu. */
     m.md.pages_stats[page_stats_pointer]
@@ -494,10 +456,13 @@ int Flash_Memory::Program_Sector(u_int32_t addr)
     m.md.pages_stats[page_stats_pointer]
             .setLastPageProgTime(m.md.pages_stats[page_stats_pointer].getPageProgTime());
 
-    increase_time(PAGE_PROG_TIME);
+    this->Increase_Time(page_stats_pointer, PAGE_PROG);
+    for (int i = 0; i < m.md.num_of_sectors; i++) {
+        this->Simulate_Error(pointer + m.md.sector_size + 1, PAGE_PROG);
+    }
 
     m.md.pages_stats[page_stats_pointer].addNumOfWrites(1);
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].addNumOfWrites(1);
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].addNumOfWrites(1);
     m.md.mem_stats->addNumOfWrites(1);
 
     clear_flag((u_char *) &m.md.status, STATUS_FLAG_RB);
@@ -553,7 +518,10 @@ int Flash_Memory::Program_Data_Move(u_int32_t old_addr, u_int32_t new_addr)
     m.md.pages_stats[old_page_stats_pointer]
             .setLastReadPageTime(m.md.pages_stats[old_page_stats_pointer].getPageProgTime());
 
-    increase_time(READ_PAGE_TIME);
+    this->Increase_Time(old_page_stats_pointer, READ_PAGE);
+    for (int i = 0; i < m.md.num_of_sectors; i++) {
+        this->Simulate_Error(old_pointer + i * m.md.sector_size + m.md.md_s_size * i + m.md.sector_size + 1, READ_PAGE);
+    }
 
     m.md.pages_stats[old_page_stats_pointer].addNumOfReads(1);
     m.md.blocks_stats[(uint8_t)(old_addr >> 16)].addNumOfReads(1);
@@ -588,7 +556,10 @@ int Flash_Memory::Program_Data_Move(u_int32_t old_addr, u_int32_t new_addr)
     m.md.pages_stats[new_page_stats_pointer]
             .setLastPageProgTime(m.md.pages_stats[new_page_stats_pointer].getPageProgTime());
 
-    increase_time(PAGE_PROG_TIME);
+    this->Increase_Time(new_page_stats_pointer, PAGE_PROG);
+    for (int i = 0; i < m.md.num_of_sectors; i++) {
+        this->Simulate_Error(new_pointer + i * m.md.sector_size + m.md.md_s_size * i + m.md.sector_size + 1, PAGE_PROG);
+    }
 
     m.md.pages_stats[new_page_stats_pointer].addNumOfWrites(1);
     m.md.blocks_stats[(uint8_t)(new_addr >> 16)].addNumOfWrites(1);
@@ -613,10 +584,10 @@ int Flash_Memory::Block_Erase(u_int32_t addr)
         return EXIT_FAILURE;
     }
 
-    u_int32_t pointer = (uint8_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size
+    u_int32_t pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size
             + m.md.num_of_pages * m.md.md_p_size + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size);
 
-    if (m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfErases() == MAX_ERASE_NUMBER) {
+    if (m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfErases() == MAX_ERASE_NUMBER) {
         set_flag(&m.data[pointer + m.md.block_size + m.md.page_size * m.md.md_p_size
                          + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size], BLOCK_SPARE_WORE_OUT);
         set_flag((u_char *) &m.md.status, STATUS_FLAG_EPE);
@@ -652,15 +623,15 @@ int Flash_Memory::Block_Erase(u_int32_t addr)
 //            m.md.block_wear_size);
 
     for (int i = 0; i < m.md.num_of_pages; i++) {
-        m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].resetHistogram();
+        m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].resetHistogram();
     }
 
     /** Aktualizace času běhu. */
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].addTotalEraseTime(m.md.blocks_stats[(uint8_t)(addr >> 16)].getEraseTime());
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].setLastEraseTime(m.md.blocks_stats[(uint8_t)(addr >> 16)].getEraseTime());
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].addNumOfErases(1);
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].addTotalEraseTime(m.md.blocks_stats[(uint16_t)(addr >> 16)].getEraseTime());
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].setLastEraseTime(m.md.blocks_stats[(uint16_t)(addr >> 16)].getEraseTime());
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].addNumOfErases(1);
 
-    increase_time(ERASE_TIME);
+    this->Increase_Time((uint16_t)(addr >> 16), ERASE);
 
     clear_flag((u_char *) &m.md.status, STATUS_FLAG_RB);
     clear_flag((u_char *) &m.md.status, STATUS_FLAG_EPE);
@@ -690,7 +661,7 @@ size_t Flash_Memory::Num_Of_Writes(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfWrites();
+    return m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfWrites();
 }
 
 size_t Flash_Memory::Num_Of_Reads(u_int32_t addr) const
@@ -699,7 +670,7 @@ size_t Flash_Memory::Num_Of_Reads(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfReads();
+    return m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfReads();
 }
 
 u_char * Flash_Memory::ECC_Info(u_int32_t addr) const
@@ -708,17 +679,18 @@ u_char * Flash_Memory::ECC_Info(u_int32_t addr) const
         return nullptr;
     }
 
-    u_int32_t pointer = (uint8_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
+    u_int32_t pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size + m.md.num_of_pages * m.md.md_p_size
             + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
-                    + (uint8_t)(addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size);
+                    + (uint8_t)(addr >> 8) * (m.md.page_size + m.md.md_p_size + m.md.num_of_sectors * m.md.md_s_size)
+                    + m.md.sector_size + 1;
 
-    auto *ecc_data = (u_char *) malloc(sizeof(u_char) * m.md.ecc_size);
+    auto *ecc_data = (u_char *) malloc(sizeof(u_char) * m.md.ecc_size / 8);
     if (!ecc_data) {
 //        cout << "Neni dostatek pameti!\n";
         return nullptr;
     }
 
-    memcpy(ecc_data, &m.data[pointer], m.md.ecc_size);
+    memcpy(ecc_data, &m.data[pointer], m.md.ecc_size / 8);
 
     return ecc_data;
 }
@@ -729,7 +701,7 @@ float Flash_Memory::Read_Time_Last(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getLastReadPageTime();
+    return m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getLastReadPageTime();
 }
 
 float Flash_Memory::Program_Time_Last(u_int32_t addr) const
@@ -738,7 +710,7 @@ float Flash_Memory::Program_Time_Last(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getLastPageProgTime();
+    return m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getLastPageProgTime();
 }
 
 float Flash_Memory::Read_Time_Total(u_int32_t addr) const
@@ -747,7 +719,7 @@ float Flash_Memory::Read_Time_Total(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getTotalReadPageTime();
+    return m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getTotalReadPageTime();
 }
 
 float Flash_Memory::Program_Time_Total(u_int32_t addr) const
@@ -756,7 +728,7 @@ float Flash_Memory::Program_Time_Total(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getTotalPageProgTime();
+    return m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getTotalPageProgTime();
 }
 
 float Flash_Memory::Com_Total_Time(u_int32_t addr) const
@@ -765,7 +737,7 @@ float Flash_Memory::Com_Total_Time(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getComTime();
+    return m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getComTime();
 }
 
 size_t Flash_Memory::Num_Of_Erases_Page(u_int32_t addr) const
@@ -774,7 +746,7 @@ size_t Flash_Memory::Num_Of_Erases_Page(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfErases();
+    return m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfErases();
 }
 
 size_t * Flash_Memory::Sector_Status_Block(u_int32_t addr) const
@@ -785,9 +757,9 @@ size_t * Flash_Memory::Sector_Status_Block(u_int32_t addr) const
 
     size_t *sector_status = new size_t(3);
 
-    sector_status[0] = m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfErases();
-    sector_status[1] = m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfWrites();
-    sector_status[2] = m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfErrors();
+    sector_status[0] = m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfErases();
+    sector_status[1] = m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfWrites();
+    sector_status[2] = m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfErrors();
 
     return sector_status;
 }
@@ -798,7 +770,7 @@ size_t Flash_Memory::Num_Of_Erases_Block(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfErases();
+    return m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfErases();
 }
 
 float Flash_Memory::Erase_Time_Total(u_int32_t addr) const
@@ -807,7 +779,7 @@ float Flash_Memory::Erase_Time_Total(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.blocks_stats[(uint8_t)(addr >> 16)].getTotalEraseTime();
+    return m.md.blocks_stats[(uint16_t)(addr >> 16)].getTotalEraseTime();
 }
 
 float Flash_Memory::Erase_Time_Last(u_int32_t addr) const
@@ -816,7 +788,7 @@ float Flash_Memory::Erase_Time_Last(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.blocks_stats[(uint8_t)(addr >> 16)].getLastEraseTime();
+    return m.md.blocks_stats[(uint16_t)(addr >> 16)].getLastEraseTime();
 }
 // TODO maybe?
 bool Flash_Memory::Is_Bad_Block(u_int32_t addr) const
@@ -825,7 +797,7 @@ bool Flash_Memory::Is_Bad_Block(u_int32_t addr) const
         return false;
     }
 
-    u_int32_t pointer = (uint8_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size
+    u_int32_t pointer = (uint16_t)(addr >> 16) * (m.md.block_size + m.md.md_b_size
             + m.md.num_of_pages * m.md.md_p_size + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size)
                     + m.md.block_size + m.md.num_of_pages * m.md.md_p_size
                     + m.md.num_of_pages * m.md.num_of_sectors * m.md.md_s_size;
@@ -839,7 +811,7 @@ size_t Flash_Memory::Num_Of_Bad_Pages(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfBadPages();
+    return m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfBadPages();
 }
 
 size_t * Flash_Memory::ECC_Histogram(u_int32_t addr) const
@@ -850,7 +822,7 @@ size_t * Flash_Memory::ECC_Histogram(u_int32_t addr) const
 
     size_t *histogram = new size_t(MEMORY_ECC_SIZE);
     for (size_t i = 0; i < MEMORY_ECC_SIZE; ++i) {
-        histogram[i] = m.md.blocks_stats[(uint8_t)(addr >> 16)].getHistogram()[i];
+        histogram[i] = m.md.blocks_stats[(uint16_t)(addr >> 16)].getHistogram()[i];
     }
 
     return histogram;
@@ -862,7 +834,7 @@ size_t Flash_Memory::Num_Of_Writes_Page(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfWrites();
+    return m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfWrites();
 }
 
 size_t Flash_Memory::Num_Of_Reads_Page(u_int32_t addr) const
@@ -871,7 +843,7 @@ size_t Flash_Memory::Num_Of_Reads_Page(u_int32_t addr) const
         return -1;
     }
 
-    return m.md.blocks_stats[(uint8_t)(addr >> 16)].getNumOfReads();
+    return m.md.blocks_stats[(uint16_t)(addr >> 16)].getNumOfReads();
 }
 
 size_t * Flash_Memory::Sector_Status_Page(u_int32_t addr) const
@@ -882,8 +854,8 @@ size_t * Flash_Memory::Sector_Status_Page(u_int32_t addr) const
 
     size_t *sector_status = new size_t(2);
 
-    sector_status[0] = m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfWrites();
-    sector_status[1] = m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfErrors();
+    sector_status[0] = m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfWrites();
+    sector_status[1] = m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].getNumOfErrors();
 
     return sector_status;
 }
@@ -934,8 +906,8 @@ int Flash_Memory::Set_Prog_Time_Page(u_int32_t addr, float time) const
         return EXIT_FAILURE;
     }
 
-    m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setLastPageProgTime(time);
-    m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setTotalPageProgTime(time);
+    m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setLastPageProgTime(time);
+    m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setTotalPageProgTime(time);
 
     return EXIT_SUCCESS;
 }
@@ -947,8 +919,8 @@ int Flash_Memory::Set_Prog_Time_Block(u_int32_t addr, float time) const
     }
 
     for (size_t i = 0; i < m.md.num_of_pages; ++i) {
-        m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + i].setLastPageProgTime(time);
-        m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + i].setPageProgTime(time);
+        m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + i].setLastPageProgTime(time);
+        m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + i].setPageProgTime(time);
     }
 
     return EXIT_SUCCESS;
@@ -970,8 +942,8 @@ int Flash_Memory::Set_Read_Time_Page(u_int32_t addr, float time) const
         return EXIT_FAILURE;
     }
 
-    m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setLastReadPageTime(time);
-    m.md.pages_stats[(uint8_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setReadPageTime(time);
+    m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setLastReadPageTime(time);
+    m.md.pages_stats[(uint16_t)(addr >> 16) * m.md.num_of_pages + (uint8_t)(addr >> 8)].setReadPageTime(time);
 
     return EXIT_SUCCESS;
 }
@@ -982,7 +954,7 @@ int Flash_Memory::Set_Read_Time_Block(u_int32_t addr, float time) const
         return EXIT_FAILURE;
     }
 
-    for (size_t i = (uint8_t)(addr >> 16); i < m.md.num_of_pages; ++i) {
+    for (size_t i = (uint16_t)(addr >> 16); i < m.md.num_of_pages; ++i) {
         m.md.pages_stats[i].setLastReadPageTime(time);
         m.md.pages_stats[i].setReadPageTime(time);
     }
@@ -1006,8 +978,8 @@ int Flash_Memory::Set_Erase_Time_Block(u_int32_t addr, float time) const
         return EXIT_FAILURE;
     }
 
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].setLastEraseTime(time);
-    m.md.blocks_stats[(uint8_t)(addr >> 16)].setEraseTime(time);
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].setLastEraseTime(time);
+    m.md.blocks_stats[(uint16_t)(addr >> 16)].setEraseTime(time);
 
     return EXIT_SUCCESS;
 }
@@ -1209,4 +1181,38 @@ u_char * Flash_Memory::Get_Data(size_t& size) const {
 
 size_t Flash_Memory::Get_True_Mem_Size() const {
     return m.md.true_mem_size;
+}
+
+void Flash_Memory::Simulate_Error(u_int32_t addr, NInstruction_Type type)
+{
+    if (type == NInstruction_Type::READ_PAGE) {
+        for (int i = 0; i < m.md.ecc_size; ++i) {
+            int chance = rand() % 10000;
+            if (chance == 1) {
+                set_flag(&m.data[addr + i / 8], i % 8);
+            }
+        }
+    } else if (type == NInstruction_Type::PAGE_PROG) {
+        for (int i = 0; i < m.md.ecc_size; ++i) {
+            int chance = rand() % 100000;
+            if (chance == 1) {
+                set_flag(&m.data[addr + i / 8], i % 8);
+            }
+        }
+    }
+}
+
+void Flash_Memory::Increase_Time(u_int32_t addr, NInstruction_Type type)
+{
+    float new_time;
+    if (type == NInstruction_Type::READ_PAGE) {
+        new_time = m.md.pages_stats[addr].getReadPageTime();
+        m.md.pages_stats[addr].setReadPageTime(new_time);
+    } else if (type == NInstruction_Type::PAGE_PROG) {
+        new_time = m.md.pages_stats[addr].getPageProgTime() - m.md.pages_stats[addr].getNumOfWrites() / 1000;
+        m.md.pages_stats[addr].setPageProgTime(new_time);
+    } else if (type == NInstruction_Type::ERASE) {
+        new_time = m.md.blocks_stats[addr].getEraseTime() + m.md.blocks_stats[addr].getNumOfErases();
+        m.md.blocks_stats[addr].setEraseTime(new_time);
+    }
 }

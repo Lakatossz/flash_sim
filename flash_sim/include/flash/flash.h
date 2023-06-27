@@ -196,24 +196,11 @@ enum class NMem_Type {
 /**
  * Definice výčtového typu pro algortimy výpočtu času.
  */
-enum NTime_Type {
-    READ_PAGE_TIME = 1,
-    PAGE_PROG_TIME = 2,
-    ERASE_TIME = 3,
+enum NInstruction_Type {
+    READ_PAGE = 1,
+    PAGE_PROG = 2,
+    ERASE = 3,
 };
-
-/*typedef enum Block_Metadata_Struct { // 8 + 32 + 16?
-    BLOCK_VALID = 0,
-    BLOCK_BAD = 1,
-    BLOCK_WEAR = 2, // 32
-    BLOCK_BAD_PAGES = 16, // 16
-} Block_Metadata;
-
-typedef enum Page_Metadata_Enum { // 8 + 16
-    PAGE_VALID = 0,
-    PAGE_ECC = 1, // 16 bitů
-    PAGE_WRITE_NUM = 16, //
-} Page_Metadata;*/
 
 typedef struct nand_metadata_struct {
     // Statické parametry paměti.
@@ -317,12 +304,12 @@ public:
     /**
      * Vrátí data obsažené ve zvolené stránce do cache.
      */
-    int Read_Page(u_int32_t addr) const;
+    int Read_Page(u_int32_t addr);
 
     /**
      * Přečte sector na dané adrese do cache.
      */
-    int Read_Sector(u_int32_t addr) const;
+    int Read_Sector(u_int32_t addr);
 
     /**
      * Přečte obsahe cache paměti.
@@ -342,10 +329,10 @@ public:
     /**
      * Nastaví data do stránky dané adresou obsahem cache.
      */
-    int Program_Page(u_int32_t addr) const;
+    int Program_Page(u_int32_t addr);
 
     /**
-     * Zapíše data do sectoru o velikosti 512B obsahem cache.
+     * Zapíše data do sectoru o velikosti @DEFAULT_SECTOR_SIZE obsahem cache.
      */
     int Program_Sector(u_int32_t addr);
 
@@ -563,4 +550,10 @@ public:
     void Set_Data();
 
     size_t Get_True_Mem_Size() const;
+
+private:
+
+    void Simulate_Error(u_int32_t addr, NInstruction_Type type);
+
+    void Increase_Time(u_int32_t addr, NInstruction_Type type);
 };
