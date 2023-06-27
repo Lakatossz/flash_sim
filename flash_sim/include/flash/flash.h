@@ -8,10 +8,10 @@
 #include <uuid/uuid.h>
 #include <iterator>
 #include <algorithm>
-#include "nlohmann/json.hpp"
-#include "include/flash/statistics/Page_Stats.h"
-#include "include/flash/statistics/Block_Stats.h"
-#include "include/flash/statistics/Memory_Stats.h"
+#include <nlohmann/json.hpp>
+#include "statistics/Page_Stats.h"
+#include "statistics/Block_Stats.h"
+#include "statistics/Memory_Stats.h"
 
 using namespace std;
 

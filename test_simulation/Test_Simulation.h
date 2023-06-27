@@ -3,8 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
-#include "../flash_sim/include/flash/flash.h"
-#include "test/main_test.cpp"
+#include "test/test.h"
 
 class Test_Simulation {
 

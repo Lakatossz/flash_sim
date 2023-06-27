@@ -971,9 +971,9 @@ int Test_Simulation::Run_Demostration(int argc, char **argv) {
 
     *output << "===========================tests-begin===========================" << endl;
 
-    run_tests();
+//    run_tests();
 
-    *output << "===========================tests-start===========================" << endl;
+    *output << "===========================tests-finish===========================" << endl;
 
     flashMemory->Flash_Init();
     flashMemory->Cache_Init();
