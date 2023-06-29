@@ -1,15 +1,15 @@
 write_cache tohle_jsou_mozna_data
-program_page 0x000000
-read_page 0x000000
-program_page 0x0001
-program_page 0x0100
-program_page 0x0101
-program_page 0x0011
-program_page 0x0002
-program_page 0x0A00
-read_page 0x0000
+program_page 0x00000100
+read_page 0x00000100
+program_page 0x00000100
+program_page 0x00000200
+program_page 0x00000300
+program_page 0x00000400
+program_page 0x00000500
+program_page 0x00000600
+read_page 0x00000000
 read_cache
-read_page 0x0011
+read_page 0x00000800
 read_cache
 save_memory ../../memory
 save_state ../../state.json
