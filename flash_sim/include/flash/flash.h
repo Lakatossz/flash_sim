@@ -25,35 +25,23 @@ using json = nlohmann::json;
 #define PARAM_PAGE_SIZE "-page_size"
 #define PARAM_NUM_OF_BLOCK "-num_of_block"
 #define PARAM_MEM_TYPE "-mem_type"
-#define PARAM_BAD_BLOCKS_FACT "-bad_blocks_fact"
-
-/**
- * Definice parametrů vložených při spuštění.
- */
 #define PARAM_READ_PAGE_TIME "-read_page_time"
 #define PARAM_PAGE_PROG_TIME "-page_prog_time"
 #define PARAM_ERASE_TIME "-erase_time"
-#define PARAM_MAX_READ_PAGE_TIME "-read_page_time"
-#define PARAM_MAX_PAGE_PROG_TIME "-page_prog_time"
-#define PARAM_MAX_ERASE_TIME "-erase_time"
-#define PARAM_MIN_READ_PAGE_TIME "-read_page_time"
-#define PARAM_MIN_PAGE_PROG_TIME "-page_prog_time"
-#define PARAM_MIN_ERASE_TIME "-erase_time"
 #define PARAM_COM_TIME "-com_time"
 #define PARAM_MAX_ERASE_NUM "-max_erase_unm"
 
 /**
  * Maximální možné hodnoty parametrů.
- * TODO Potřeba doupřesnit.
  */
-#define MAX_BLOCK_SIZE 10000
-#define MAX_PAGE_SIZE 1024
+#define MAX_BLOCK_SIZE 10000000
+#define MAX_PAGE_SIZE 10000000
 #define MAX_SECTOR_SIZE MAX_PAGE_SIZE
-#define MAX_NUM_OF_BLOCK 128
-#define MAX_READ_PAGE_TIME 1000
-#define MAX_PAGE_PROG_TIME 1000
-#define MAX_ERASE_TIME 1000
-#define MAX_ERASE_NUMBER 100000
+#define MAX_NUM_OF_BLOCK 10000000
+#define MAX_READ_PAGE_TIME 1000000
+#define MAX_PAGE_PROG_TIME 1000000
+#define MAX_ERASE_TIME 100000
+#define MAX_ERASE_NUMBER 100000000
 
 /**
  * Minimální možné hodnoty parametrů.
@@ -199,10 +187,10 @@ typedef struct mem_type_values_struct {
 /**
  * Definice struktury představující typy buněk paměti.
  */
-#define SLC (mem_type_values){0.1, 0.1, 0.1, 0.1}
-#define MLC (mem_type_values){0.2, 0.2, 0.2, 0.2}
-#define TLC (mem_type_values){0.4, 0.4, 0.4, 0.4}
-#define QLC (mem_type_values){0.8, 0.8, 0.8, 0.8}
+#define SLC (mem_type_values){0.1, 1, 0.1, 0.1}
+#define MLC (mem_type_values){0.2, 1, 0.2, 0.2}
+#define TLC (mem_type_values){0.4, 1, 0.4, 0.4}
+#define QLC (mem_type_values){0.8, 1, 0.8, 0.8}
 
 #define DEFAULT_MEM_TYPE SLC
 

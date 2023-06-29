@@ -136,91 +136,9 @@ Flash_Memory * Test_Simulation::Specify_Memory(int argc, char **argv, ostream *o
                 *output << "Spatny parametr typu pameti. Povolene jsou (slc, mlc, tlc, qlc)!\n";
                 return nullptr;
             }
-        } else if (strcmp(argv[i], PARAM_BAD_BLOCKS_FACT) == 0) {
-            try {
-                bad_blocks_fact = stoi(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
-
-            } catch (const std::invalid_argument & e) {
-                *output << "Parametr musi byt cislo!\n";
-                return nullptr;
-            }
-        } else if (strcmp(argv[i], PARAM_MAX_READ_PAGE_TIME) == 0) {
-            try {
-                max_read_page_time = stof(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
-            } catch (const std::invalid_argument & e) {
-                *output << "Parametr musi byt cislo!\n";
-                return nullptr;
-            }
-        } else if (strcmp(argv[i], PARAM_MAX_PAGE_PROG_TIME) == 0) {
-            try {
-                max_page_prog_time = stof(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
-            } catch (const std::invalid_argument & e) {
-                *output << "Parametr musi byt cislo!\n";
-                return nullptr;
-            }
-        } else if (strcmp(argv[i], PARAM_MAX_ERASE_TIME) == 0) {
-            try {
-                max_erase_time = stof(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
-            } catch (const std::invalid_argument & e) {
-                *output << "Parametr musi byt cislo!\n";
-                return nullptr;
-            }
-        } else if (strcmp(argv[i], PARAM_MIN_READ_PAGE_TIME) == 0) {
-            try {
-                min_read_page_time = stof(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
-            } catch (const std::invalid_argument & e) {
-                *output << "Parametr musi byt cislo!\n";
-                return nullptr;
-            }
-        } else if (strcmp(argv[i], PARAM_MIN_PAGE_PROG_TIME) == 0) {
-            try {
-                min_page_prog_time = stof(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
-            } catch (const std::invalid_argument & e) {
-                *output << "Parametr musi byt cislo!\n";
-                return nullptr;
-            }
-        } else if (strcmp(argv[i], PARAM_MIN_ERASE_TIME) == 0) {
-            try {
-                min_erase_time = stof(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
-            } catch (const std::invalid_argument & e) {
-                *output << "Parametr musi byt cislo!\n";
-                return nullptr;
-            }
         } else if (strcmp(argv[i], PARAM_COM_TIME) == 0) {
             try {
                 com_time = stof(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return nullptr;
@@ -229,10 +147,10 @@ Flash_Memory * Test_Simulation::Specify_Memory(int argc, char **argv, ostream *o
         else if (strcmp(argv[i], PARAM_MAX_ERASE_NUM) == 0) {
             try {
                 max_erase_num = stoi(argv[i + 1]);
-//                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
-//                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
-//                    return nullptr;
-//                }
+                if (erase_time > MAX_ERASE_TIME || erase_time < MIN_ERASE_TIME) {
+                    *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME << " a " << MAX_ERASE_TIME << "!\n";
+                    return nullptr;
+                }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
                 return nullptr;
