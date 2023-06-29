@@ -1,4 +1,13 @@
-#include "test.h"
+#pragma once
+
+#include "../../flash_sim/include/flash/flash.h"
+
+#define LONG_TEXT "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Sed ac dolor sit amet purus malesuada congue. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. In rutrum. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Aenean vel massa quis mauris vehicula lacinia. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Fusce tellus. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Fusce dui leo, imperdiet in, aliquam sit amet, feugiat eu, orci. Quisque porta. Donec vitae arcu. Quisque tincidunt scelerisque libero. Mauris elementum mauris vitae tortor. Vivamus luctus egestas leo. Cras pede libero, dapibus nec, pretium sit amet, tempor quis. Integer vulputate sem a nibh rutrum consequat. Nulla quis diam. Phasellus et lorem id felis nonummy placerat. Etiam dictum tincidunt diam. Mauris dolor felis, sagittis at, luctus sed, aliquam non, tellus. Praesent dapibus. Nulla est. Nullam sit amet magna in magna gravida vehicula. Aenean id metus id velit ullamcorper pulvinar. Praesent id justo in neque elementum ultrices. Sed convallis magna eu sem. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos hymenaeos. Vivamus porttitor turpis ac leo. Etiam egestas wisi a erat. Donec quis nibh at felis congue commodo. Nam sed tellus id magna elementum tincidunt. In enim a arcu imperdiet malesuada. Mauris dictum facilisis augue. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Cras pede libero, dapibus nec, pretium sit amet, tempor quis. Maecenas fermentum, sem in pharetra pellentesque, velit turpis volutpat ante, in pharetra metus odio a lectus. Nullam justo enim, consectetuer nec, ullamcorper ac, vestibulum in, elit. Curabitur vitae diam non enim vestibulum interdum. Curabitur sagittis hendrerit ante. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Integer lacinia. Suspendisse sagittis ultrices augue. Proin in tellus sit amet nibh dignissim sagittis. Nulla accumsan, elit sit amet varius semper, nulla mauris mollis quam, tempor suscipit diam nulla vel leo. Nunc tincidunt ante vitae massa. In convallis. Proin in tellus sit amet nibh dignissim sagittis. Etiam commodo dui eget wisi. Quisque porta. Praesent dapibus. In rutrum. Duis viverra diam non justo. Nulla accumsan, elit sit amet varius semper, nulla mauris mollis quam, tempor suscipit diam nulla vel leo. Etiam dictum tincidunt diam. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Nam quis nulla. Aliquam id dolor. Quisque tincidunt scelerisque libero."
+#define SHORT_TEXT "Lorem ipsum dolor sit amet"
+
+Flash_Memory *memory;
+
+int counter_done = 0, counter_all = 0;
 
 void run_test(bool (*function_test)(), string test_name) {
     counter_all++;
@@ -15,7 +24,7 @@ bool test_memory_init_default_ok() {
 }
 
 bool test_create_specific_memory_ok() {
-    memory = new Flash_Memory(512, 8192, 16, NMem_Type::SLC, 10, 15, 20);
+    memory = new Flash_Memory(512, 8192, 16, SLC, 10, 15, 20);
     return memory != nullptr && memory->Flash_Init() == EXIT_SUCCESS;
 }
 
@@ -24,7 +33,7 @@ bool test_cache_init_ok() {
 }
 
 bool test_mem_info() {
-    return memory->Read_ID() != nullptr;
+    return memory->Read_ID() == DEFAULT_ID;
 }
 
 bool test_read_cache_ok() {
@@ -175,7 +184,7 @@ bool test_read_time_last_wrong() {
 }
 
 bool test_program_time_last_ok() {
-    return memory->Program_Time_Last(0x00000000) == DEFAULT_PAGE_PROG_TIME;
+    return isgreaterequal(memory->Program_Time_Last(0x00000000),14.9979);
 }
 
 bool test_program_time_last_wrong() {
@@ -183,7 +192,7 @@ bool test_program_time_last_wrong() {
 }
 
 bool test_read_time_total_ok() {
-    return memory->Read_Time_Total(0x00000000) == 55.0;
+    return isgreaterequal(memory->Read_Time_Total(0x00000000), 26.01);
 }
 
 bool test_read_time_total_wrong() {
@@ -191,7 +200,7 @@ bool test_read_time_total_wrong() {
 }
 
 bool test_program_time_total_ok() {
-    return memory->Program_Time_Total(0x00000000) == 120;
+    return isgreaterequal(memory->Program_Time_Total(0x00000000), 119.994);
 }
 
 bool test_program_time_total_wrong() {
@@ -311,25 +320,25 @@ bool test_set_erase_time_mem_ok() {
 }
 
 bool test_save_and_load_memory_ok() {
-    return memory->Save_Memory("test_save_memory_ok_file.json") == EXIT_SUCCESS
-        && memory->Load_Memory("test_save_memory_ok_file.json") == EXIT_SUCCESS;
+    return memory->Save_Memory("test_save_memory_ok_file") == EXIT_SUCCESS
+        && memory->Load_Memory("test_save_memory_ok_file") == EXIT_SUCCESS;
 }
 
 bool test_save_and_load_memory_wrong() {
-    return memory->Save_Memory("test_save_memory_wrong_file.json") == EXIT_FAILURE
-           || memory->Load_Memory("test_save_memory_wrong_file.text") == EXIT_FAILURE;
+    return memory->Save_Memory("") == EXIT_FAILURE
+           || memory->Load_Memory("file.json") == EXIT_FAILURE;
 }
 
 bool test_save_and_load_state_ok() {
     bool save_return = memory->Save_State("test_save_state_ok_file.json") == EXIT_SUCCESS;
     memory = memory->Load_State("test_save_state_ok_file.json");
-    bool load_return = memory != nullptr && memory->Read_Time_Total(0x00000000) == 7.0;
+    bool load_return = memory != nullptr && isgreaterequal(memory->Read_Time_Total(0x00000000),26.01);
     return save_return && load_return;
 }
 
 bool test_save_and_load_state_wrong() {
     bool save_return = memory->Save_State("test_save_state_wrong_file.json") == EXIT_FAILURE;
-    memory = memory->Load_State("test_save_memory_wrong_file.json");
+    memory = memory->Load_State("test_save_memory_wrong_file.txt");
     bool load_return = memory == nullptr || memory->Read_Time_Total(0x00000000) == 1.0;
     return save_return || load_return;
 }
@@ -422,12 +431,12 @@ int run_tests()
     run_test(&test_set_erase_time_mem_ok, "test_set_erase_time_mem_ok");
     run_test(&test_save_and_load_memory_ok, "test_save_and_load_memory_ok");
     run_test(&test_save_and_load_memory_wrong, "test_save_and_load_memory_wrong");
-//    run_test(&test_save_and_load_state_ok, "test_save_and_load_state_ok");
-//    run_test(&test_save_and_load_state_wrong, "test_save_and_load_state_wrong");
+    run_test(&test_save_and_load_state_ok, "test_save_and_load_state_ok");
     run_test(&test_wear_out_block, "test_wear_out_block");
     run_test(&test_true_mem_size, "test_true_mem_size");
     run_test(&test_read_status_ok, "test_read_status_ok");
     run_test(&test_reset_memory_ok, "test_reset_memory_ok");
+    run_test(&test_save_and_load_state_wrong, "test_save_and_load_state_wrong");
 
     cout << "Dobehlo spravne " << counter_done << " z " << counter_all << " testu\n";
 

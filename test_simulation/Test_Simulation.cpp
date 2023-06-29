@@ -36,7 +36,7 @@ Flash_Memory * Test_Simulation::Specify_Memory(int argc, char **argv, ostream *o
     float read_page_time = DEFAULT_READ_PAGE_TIME;
     float page_prog_time = DEFAULT_PAGE_PROG_TIME;
     float erase_time = DEFAULT_ERASE_TIME;
-    NMem_Type type = DEFAULT_MEM_TYPE;
+    mem_type_values type = DEFAULT_MEM_TYPE;
     string type_s = "slc";
     size_t bad_blocks_fact = DEFAULT_BAD_BLOCKS_FACTORY;
     float max_read_page_time = MAX_READ_PAGE_TIME;
@@ -125,13 +125,13 @@ Flash_Memory * Test_Simulation::Specify_Memory(int argc, char **argv, ostream *o
         } else if (strcmp(argv[i], PARAM_MEM_TYPE) == 0) {
             type_s = string(argv[i + 1]);
             if (strcmp(argv[i + 1], MEM_TYPE_SLC) == 0) {
-                type = NMem_Type::SLC;
+                type = SLC;
             } else if (strcmp(argv[i + 1], MEM_TYPE_MLC) == 0) {
-                type = NMem_Type::MLC;
+                type = MLC;
             } else if (strcmp(argv[i + 1], MEM_TYPE_TLC) == 0) {
-                type = NMem_Type::TLC;
+                type = TLC;
             } else if (strcmp(argv[i + 1], MEM_TYPE_QLC) == 0) {
-                type = NMem_Type::QLC;
+                type = QLC;
             } else {
                 *output << "Spatny parametr typu pameti. Povolene jsou (slc, mlc, tlc, qlc)!\n";
                 return nullptr;
@@ -279,35 +279,29 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 *input >> args[0];
                 if (flashMemory->Read_Page((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci cteni stranky.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_READ_SECTOR)) {
             try {
                 *input >> args[0];
                 if (flashMemory->Read_Sector((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci cteni sektoru.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_READ_CACHE)) {
             try {
                 u_char *data = flashMemory->Read_Cache();
                 if (!data) {
                     *output << "Nepodarilo se provest operaci cteni cache.\n";
-                    return EXIT_FAILURE;
                 }
                 *output << "Nactena data: " << data << endl;
                 free(data);
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_READ_STATUS)) {
             u_char data = flashMemory->Read_Status();
@@ -322,11 +316,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 *output << "adresa: " << (int16_t) stoi(args[0], nullptr, 16) << endl;
                 if (flashMemory->Program_Page((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci zapisu.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo! " << "\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_PROGRAM_SECTOR)) {
             try {
@@ -334,18 +326,15 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 *output << "adresa: " << args[0] << endl;
                 if (flashMemory->Program_Sector((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci zapsani sektoru.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo! " << "\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_WRITE_CACHE)) {
             *input >> args[1];
             *output << "data: " << args[1] << endl;
             if (flashMemory->Write_Cache(args[1])) {
                 *output << "Nepodarilo se provest operaci.\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_PROGRAM_DATA_MOVE)) {
             try {
@@ -357,22 +346,18 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                         Program_Data_Move((int16_t) stoi(args[0], nullptr, 16),
                                           (int16_t) stoi(args[1], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci presunuti dat.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo! " << "\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_BLOCK_ERASE)) {
             try {
                 *input >> args[0];
                 if (flashMemory->Block_Erase((int16_t) stoi(args[0], nullptr, 16))) {
                     *output << "Nepodarilo se provest operaci vymazani bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_WRITES_PAGE)) {
             try {
@@ -382,11 +367,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Na stranku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet zapisu stranky.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_READS_PAGE)) {
             try {
@@ -396,11 +379,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byla prectena " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet cteni stranky.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_ECC_INFO)) {
             try {
@@ -408,14 +389,12 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 u_char *data = flashMemory->ECC_Info((int16_t) stoi(args[0], nullptr, 16));
                 if(!data) {
                     *output << "Nepodarilo se precist ECC info na adrese " << args[0] << ".\n";
-                    return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0] << ": " << data << ".\n";
                     free(data);
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_READ_TIME_LAST)) {
             try {
@@ -425,11 +404,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci cas posledniho cteni.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_PROG_TIME_LAST)) {
             try {
@@ -439,11 +416,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byla naprogramovana za " << value << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci cas posledniho zapisu.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_READ_TIME_TOTAL)) {
             try {
@@ -453,11 +428,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byla prectena za " << value << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci celkovy cas cteni.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_PROG_TIME_TOTAL)) {
             try {
@@ -467,11 +440,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byla dohromady naprogramovana za " << value << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci celkovy cas zapsani.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_COM_TOTAL_TIME)) {
             try {
@@ -481,11 +452,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byla dohromady com za " << value << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci celkovy cas komunikace.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_ERASES_PAGE)) {
             try {
@@ -495,11 +464,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byla vymazana " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet mazani pro stranku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_SECTOR_STATUS_PAGE)) {
             try {
@@ -510,11 +477,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     delete(data);
                 } else {
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_ERASES_BLOCK)) {
             try {
@@ -524,11 +489,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Blok na adrese " << args[0] << " byl smazan " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet mazani bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_ERASE_TIME_TOTAL)) {
             try {
@@ -538,11 +501,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Blok na adrese " << args[0] << " byl dohormady smazan za " << value << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci celkovy cas mazani.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_ERASE_TIME_LAST)) {
             try {
@@ -552,11 +513,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Stranka na adrese " << args[0] << " byl smazan za " << number << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci cas posledniho mazani.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_IS_BAD_BLOCK)) {
             try {
@@ -566,11 +525,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Blok na adrese " << args[0] << " je spatny: " << bool_value << endl;
                 } else {
                     *output << "Nepodarilo se provest operaci poskozeni bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_BAD_PAGES)) {
             try {
@@ -580,11 +537,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Blok na adrese " << args[0] << " ma " << number << "poskozenych stranek.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet spatnych stranek v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_ECC_HISTOGRAM_BLOCK)) {
             try {
@@ -592,7 +547,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 size_t *data = flashMemory->ECC_Histogram((int16_t) stoi(args[0], nullptr, 16));
                 if(data) {
                     *output << "Nepodarilo se precist ECC histogram bloku na adrese " << args[0] << ".\n";
-                    return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0];
                     for (int i = 0; i < MEMORY_ECC_SIZE; i++) {
@@ -603,7 +557,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_WRITES_BLOCK)) {
             try {
@@ -613,11 +566,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Do bloku na adrese " << args[0] << " bylo zapsano " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet zapsanych stranke v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_READS_BLOCK)) {
             try {
@@ -627,11 +578,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Z bloku na adrese " << args[0] << " bylo precteno " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet prectenych stranek v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_SECTOR_STATUS_BLOCK)) {
             try {
@@ -643,11 +592,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     delete(data);
                 } else {
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_BAD_BLOCKS)) {
             try {
@@ -656,11 +603,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "V pameti je " << number << "poskozenych bloku.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet poskozenych stranek v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_BAD_PAGES_MEM)) {
             try {
@@ -669,11 +614,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "V pameti je " << number << "poskozenych stranek.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet spatnych stranek v pameti.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_ECC_HISTOGRAM_MEM)) {
             try {
@@ -681,7 +624,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 size_t *data = flashMemory->ECC_Histogram();
                 if(!data) {
                     *output << "Nepodarilo se precist ECC histogram pameti " << args[0] << ".\n";
-                    return EXIT_FAILURE;
                 } else {
                     *output << "Obsah ecc na adrese " << args[0];
                     for (int i = 0; i < MEMORY_ECC_SIZE; i++) {
@@ -692,7 +634,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_MEM_STATUS_PAGE)) {
             try {
@@ -702,11 +643,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     delete(data);
                 } else {
                     *output << "Nepodarilo se provest operaci status sektoru v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_WRITES_MEM)) {
             try {
@@ -715,11 +654,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Do pameti bylo zapsano " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet zapisu v pameti.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_NUM_OF_READS_MEM)) {
             try {
@@ -728,11 +665,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                     *output << "Z pameti bylo cteno " << number << "krat.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci pocet cteni v pameti.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_PROG_TIME_PAGE)) {
             try {
@@ -741,7 +676,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[1]) > MAX_PAGE_PROG_TIME || stof(args[1]) < MIN_PAGE_PROG_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_PAGE_PROG_TIME <<
                             " a " << MAX_PAGE_PROG_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Prog_Time_Page(stoi(args[0], nullptr, 16),
                                                     stof(args[1]))) {
@@ -749,11 +683,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                             << " na " << args[1] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu zapisu stranky.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_PROG_TIME_BLOCK)) {
             try {
@@ -762,7 +694,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[1]) > MAX_PAGE_PROG_TIME || stof(args[1]) < MIN_PAGE_PROG_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_PAGE_PROG_TIME <<
                             " a " << MAX_PAGE_PROG_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Prog_Time_Block(stoi(args[0], nullptr, 16),
                                                      stof(args[1]))) {
@@ -770,11 +701,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                             << " na " << args[1] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu zapisu v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_PROG_TIME_MEM)) {
             try {
@@ -782,17 +711,14 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[0]) > MAX_PAGE_PROG_TIME || stof(args[0]) < MIN_PAGE_PROG_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_PAGE_PROG_TIME <<
                             " a " << MAX_PAGE_PROG_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Prog_Time_Mem(stof(args[0]))) {
                     *output << "Podarilo se zmenit cas naprogramovani cele pamti na " << args[1] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu zapisu v pameti.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_READ_TIME_PAGE)) {
             try {
@@ -801,7 +727,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[1]) > MAX_READ_PAGE_TIME || stof(args[1]) < MIN_READ_PAGE_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_READ_PAGE_TIME <<
                             " a " << MAX_READ_PAGE_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Read_Time_Page(stoi(args[0], nullptr, 16),
                                                     stof(args[1]))) {
@@ -809,11 +734,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                             << " na " << args[1] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu cteni stranky.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_READ_TIME_BLOCK)) {
             try {
@@ -822,7 +745,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[1]) > MAX_READ_PAGE_TIME || stof(args[1]) < MIN_READ_PAGE_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_READ_PAGE_TIME <<
                             " a " << MAX_READ_PAGE_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Read_Time_Block(stoi(args[0], nullptr, 16),
                                                      stof(args[1]))) {
@@ -830,11 +752,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                             << " na " << args[1] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu cteni bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_READ_TIME_MEM)) {
             try {
@@ -842,17 +762,14 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[0]) > MAX_READ_PAGE_TIME || stof(args[0]) < MIN_READ_PAGE_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_READ_PAGE_TIME <<
                             " a " << MAX_READ_PAGE_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Read_Time_Mem(stof(args[0]))) {
                     *output << "Podarilo se zmenit cas cteni cele pameti na " << args[0] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu cteni v pameti.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_ERASE_TIME_BLOCK)) {
             try {
@@ -861,7 +778,6 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[1]) > MAX_ERASE_TIME || stof(args[1]) < MIN_ERASE_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME <<
                             " a " << MAX_ERASE_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Erase_Time_Block(stoi(args[0], nullptr, 16),
                                                       stof(args[1]))) {
@@ -869,11 +785,9 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                             << " na " << args[1] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu mazani v bloku.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_CHANGE_ERASE_TIME_MEM)) {
             try {
@@ -881,17 +795,14 @@ int Test_Simulation::Handle_Life_Cycle(ostream *output, istream *input, Flash_Me
                 if (stof(args[0]) > MAX_ERASE_TIME || stof(args[0]) < MIN_ERASE_TIME) {
                     *output << "Parametr musi byt cislo mezi " << MIN_ERASE_TIME <<
                             " a " << MAX_ERASE_TIME << "!\n";
-                    return EXIT_FAILURE;
                 }
                 if (flashMemory->Set_Erase_Time_Mem(stof(args[0]))) {
                     *output << "Podarilo se zmenit cas naprogramovani cele pameti na " << args[0] << "μs.\n";
                 } else {
                     *output << "Nepodarilo se provest operaci zmena casu mazani v pameti.\n";
-                    return EXIT_FAILURE;
                 }
             } catch (const std::invalid_argument & e) {
                 *output << "Parametr musi byt cislo!\n";
-                return EXIT_FAILURE;
             }
         } else if (command == string(COM_RESET)) {
             if (flashMemory->Reset()) {
@@ -968,12 +879,6 @@ int Test_Simulation::Run_Demostration(int argc, char **argv) {
             return EXIT_FAILURE;
         }
     }
-
-    *output << "===========================tests-begin===========================" << endl;
-
-//    run_tests();
-
-    *output << "===========================tests-finish===========================" << endl;
 
     flashMemory->Flash_Init();
     flashMemory->Cache_Init();

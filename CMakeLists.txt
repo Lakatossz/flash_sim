@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24.0)
 project(flash_sim_project)
 
-set(SOURCE_FILES main.cpp test_simulation/Test_Simulation.cpp test_simulation/test/test.cpp)
+set(SOURCE_FILES main.cpp test_simulation/test/test.hpp test_simulation/Test_Simulation.cpp)
 
 include_directories(flash_sim)
 

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
-#include "test/test.h"
+#include "include/flash/flash.h"
 
 class Test_Simulation {
 

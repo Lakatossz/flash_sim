@@ -5,7 +5,6 @@
 #include <fstream>
 #include <memory>
 #include <cstdlib>
-#include <uuid/uuid.h>
 #include <iterator>
 #include <algorithm>
 #include <nlohmann/json.hpp>
@@ -150,9 +149,9 @@ using json = nlohmann::json;
 //#define DEFAULT_READ_PAGE_TIME 10
 //#define DEFAULT_PAGE_PROG_TIME 15
 //#define DEFAULT_ERASE_TIME 30
-#define DEFAULT_MEM_TYPE NMem_Type::SLC
 #define DEFAULT_COM_TIME 15
 #define DEFAULT_BAD_BLOCKS_FACTORY 12
+#define DEFAULT_ID 666
 
 #define SECTOR_SPARE_WRITTEN 0
 #define SECTOR_SPARE_ERROR 1
@@ -183,16 +182,29 @@ using json = nlohmann::json;
 #define STATUS_FLAG_ECC 6
 #define STATUS_FLAG_ERR 7
 
+#define READ_PAGE_ERROR_RATE 10000
+#define PAGE_PROG_ERROR_RATE 100000
+
 /**
- * Definice výčtového typu představující typ buňky paměti.
- * Do budoucna by mohl určovat poruchovost, chybovost, životnost.
+ * Definice struktury představující konstanty typu paměti.
+ * Konstanty slouží k výpočtu automatických fcí.
  */
-enum class NMem_Type {
-    SLC = 1,
-    MLC = 2,
-    TLC = 3,
-    QLC = 4,
-};
+typedef struct mem_type_values_struct {
+    float error_const;
+    float read_time_const;
+    float prog_time_const;
+    float erase_time_const;
+} mem_type_values;
+
+/**
+ * Definice struktury představující typy buněk paměti.
+ */
+#define SLC (mem_type_values){0.1, 0.1, 0.1, 0.1}
+#define MLC (mem_type_values){0.2, 0.2, 0.2, 0.2}
+#define TLC (mem_type_values){0.4, 0.4, 0.4, 0.4}
+#define QLC (mem_type_values){0.8, 0.8, 0.8, 0.8}
+
+#define DEFAULT_MEM_TYPE SLC
 
 /**
  * Definice výčtového typu pro algortimy výpočtu času.
@@ -205,7 +217,7 @@ enum NInstruction_Type {
 
 typedef struct nand_metadata_struct {
     // Statické parametry paměti.
-    uuid_t id{}; /** Identifikátor paměti. */
+    size_t id{}; /** Identifikátor paměti. */
     size_t sector_size = DEFAULT_SECTOR_SIZE; /** Velikost sektoru stránky. */
     size_t num_of_sectors = DEFAULT_PAGE_SIZE / DEFAULT_SECTOR_SIZE; /** Počet sektorů. */
     size_t page_size = DEFAULT_PAGE_SIZE; /** Velikost stránky. */
@@ -221,7 +233,7 @@ typedef struct nand_metadata_struct {
     size_t md_b_size = 5 + block_wear_size; /** Celkový počet metadat jednoho bloku. */
     u_char status = 0; /** Status registr. */
     size_t status_bits = 8; /** Počet bitů status registru. */
-    NMem_Type mem_type = NMem_Type::SLC; /** Typ paměti - určuje velikost buňky. */
+    mem_type_values mem_type = SLC; /** Typ paměti - určuje velikost buňky. */
 
     // Dynamické parametry paměti.
     float mem_time = 0; /** Doba běhu paměti v μs. */
@@ -265,7 +277,7 @@ public:
     Flash_Memory(size_t page_size,
                  size_t block_size,
                  size_t number_of_blocks,
-                 NMem_Type memory_type,
+                 mem_type_values memory_type,
                  float read_page_time,
                  float page_prog_time,
                  float erase_time);
@@ -278,7 +290,7 @@ public:
     Flash_Memory(size_t page_size,
                  size_t block_size,
                  size_t number_of_blocks,
-                 NMem_Type memory_type);
+                 mem_type_values memory_type);
 
     /**
      * Uvolní všechnu alokovanou paměť.
@@ -286,16 +298,10 @@ public:
     ~Flash_Memory();
 
     /**
-     * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
+     * Inicializuje paměť a připraví ji k použití.
      * Slouží k prvotní inicializaci paměti.
      */
     int Flash_Init();
-
-    /**
-     * Inicializuje paměť a připraví ji k použití. Vrátí ID chipu.
-     * Slouží k přeinicializaci paměti - např. po načtení ze souboru.
-     */
-    int Flash_Init(u_char *data, size_t size);
 
     /**
      * Připraví blok cache k použití.
@@ -313,6 +319,11 @@ public:
     int Read_Sector(u_int32_t addr);
 
     /**
+     * Přečte sector z cache.
+     */
+    int Read_Sector_From_Cache(u_int32_t addr);
+
+    /**
      * Přečte obsahe cache paměti.
      */
     u_char* Read_Cache() const;
@@ -323,9 +334,9 @@ public:
     u_char Read_Status() const;
 
     /**
-     * Vráti UUID (128b) zařízení.
+     * Vráti size_t id zařízení.
      */
-    uuid_t* Read_ID();
+    size_t Read_ID();
 
     /**
      * Nastaví data do stránky dané adresou obsahem cache.
@@ -544,11 +555,7 @@ public:
      */
     Flash_Memory * Load_State(const string& file_name) const;
 
-    void Set_Id(uuid_t id);
-
-    u_char * Get_Data(size_t& size) const;
-
-    void Set_Data();
+    void Set_Id(size_t id);
 
     size_t Get_True_Mem_Size() const;
 
